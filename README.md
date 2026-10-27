@@ -1,6 +1,6 @@
 # Alyusro Node
 
-Daftar kerja modul: [Checklist migrasi Node.js](../docs/checklist-migrasi-nodejs.md).
+Daftar kerja dashboard: [Checklist migrasi dashboard Node.js](../docs/checklist-migrasi-nodejs.md).
 
 Prototipe migrasi halaman publik ke Node.js 22+, memakai database MySQL yang sama dengan Laravel dan aset tampilan asli.
 
