@@ -2,6 +2,7 @@ import { contentResources } from './content-resources.js';
 import { contentRoot, saveContentFile, readContentFile, removeNewContentFile } from './content-files.js';
 import ExcelJS from 'exceljs';
 import sanitize from 'sanitize-html';
+import { convertNamesWorkbook } from './name-library.js';
 import { importMaster, importHeaders } from './master-imports.js';
 import { pool } from './db.js';
 import { esc } from './dashboard-shell.js';
@@ -24,6 +25,8 @@ export const masterResources = {
   fields: [text('tanggal', 'Tanggal Mulai', { type: 'date' }), text('tanggal_selesai', 'Tanggal Selesai', { type: 'date' }), text('kegiatan', 'Kegiatan'), text('keterangan', 'Keterangan', { type: 'textarea', required: false, max: 65535 }), text('warna', 'Warna', { options: Object.values(calendarColors) })], search: ['kegiatan', 'keterangan'], sorts: ['tanggal', 'tanggal_selesai'] },
  prestasi: { title: 'Prestasi', table: 'prestasis', permission: 'prestasi', view: true, importable: true,
   fields: [text('nama', 'Nama'), text('peringkat', 'Peringkat', { max: 50 }), text('nama_lomba', 'Nama Lomba'), text('tingkat', 'Tingkat'), text('penyelenggara', 'Penyelenggara'), integer('tahun', 'Tahun')], search: ['nama', 'nama_lomba', 'tingkat', 'penyelenggara'], sorts: ['peringkat', 'tahun', 'created_at', 'updated_at'] },
+ 'perpustakaan-nama': { title: 'Perpustakaan Nama', table: 'perpustakaan_namas', permission: 'perpustakaan::nama', importable: true, convertible: true, defaultDirection: 'desc',
+  fields: [text('nama_latin', 'Nama Latin'), text('nama_arab', 'Nama Arab'), text('status', 'Status', { options: ['1', '2'], labels: { '1': 'Belum Terverifikasi', '2': 'Terverifikasi' }, default: '1' })], search: ['nama_latin', 'nama_arab'], sorts: ['created_at', 'updated_at', 'nama_latin', 'nama_arab', 'status'], undefinedFilter: true },
  'nama-kota': { title: 'Nama Kota', table: 'nama_kota', permission: 'nama::kota', importable: true,
   fields: [text('nama_latin', 'Nama Latin', { max: 100 }), text('nama_arab', 'Nama Arab', { max: 100 }), text('status', 'Terverifikasi', { type: 'boolean', options: ['0', '1'], default: '0' })], search: ['nama_latin', 'nama_arab'], sorts: ['nama_latin', 'nama_arab', 'status'] },
  'tema-soal': { title: 'Tema Soal', table: 'cbt_tema_soal', permission: 'c::b::t::tema::soal',
@@ -41,7 +44,7 @@ export const masterResources = {
 };
 
 export function masterRoute(path) {
- const match = path.match(/^\/dashboard\/([a-z-]+)(?:\/(create|delete|import|template)|\/([1-9]\d{0,14})\/(edit|view|delete|file|download))?$/);
+ const match = path.match(/^\/dashboard\/([a-z-]+)(?:\/(create|delete|import|template|convert|conversion-template)|\/([1-9]\d{0,14})\/(edit|view|delete|file|download))?$/);
  if (!match || !Object.hasOwn(masterResources, match[1])) return null;
  return { resource: match[1], action: match[3] ? match[4] : match[2] === 'delete' ? 'bulkDelete' : match[2] || 'list', id: match[3] };
 }
@@ -89,15 +92,17 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
   if (!config) return { status: 404, title: 'Tidak ditemukan', body: '' };
   const base = `/dashboard/${resource}`;
   const message = (status, value) => ({ status, title: config.title, body: `<section><p>${esc(value)}</p><a href="${base}">Kembali ke daftar</a></section>` });
-  const permission = { list: 'view_any', create: 'create', edit: 'update', view: 'view', delete: 'delete', bulkDelete: 'delete_any', file: 'view_any', download: 'view_any', import: 'create', template: 'create' }[action];
+  const permission = { list: 'view_any', create: 'create', edit: 'update', view: 'view', delete: 'delete', bulkDelete: 'delete_any', file: 'view_any', download: 'view_any', import: 'create', template: 'create', convert: 'create', 'conversion-template': 'view_any' }[action];
   if (!permission || (action === 'view' && !config.view) || (action === 'delete' && !config.singleDelete)) return message(404, 'Halaman tidak ditemukan.');
   if (['import', 'template'].includes(action) && !config.importable) return message(404, 'Halaman tidak ditemukan.');
   if (!has(access, config, permission)) return message(403, 'Anda tidak memiliki izin untuk tindakan ini.');
   if (['edit', 'view', 'delete', 'file', 'download'].includes(action) && !validId(id)) return message(404, 'Data tidak ditemukan.');
   if (action === 'import' && resource === 'nama-kota' && !has(access, config, 'update')) return message(403, 'Impor kota memerlukan izin tambah dan ubah.');
-  if (action === 'template') {
+  if (['convert', 'conversion-template'].includes(action) && !config.convertible) return message(404, 'Halaman tidak ditemukan.');
+  if (action === 'convert' && !has(access, config, 'view_any')) return message(403, 'Konversi memerlukan izin daftar dan tambah kamus.');
+  if (action === 'template' || action === 'conversion-template') {
    const workbook = new ExcelJS.Workbook(), sheet = workbook.addWorksheet('Template');
-   sheet.addRow(importHeaders(resource));
+   sheet.addRow(action === 'conversion-template' ? ['nama_latin'] : importHeaders(resource));
    return { status: 200, xlsx: Buffer.from(await workbook.xlsx.writeBuffer()) };
   }
   if (config.author && !validId(user?.id)) return message(403, 'Akun penulis tidak valid.');
@@ -122,18 +127,24 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
     const filename = resource === 'dokumen' ? String(rows[0]?.nama || 'dokumen') + (String(rows[0]?.nama).toLowerCase().endsWith(extension) ? '' : extension) : storedName;
     return file ? { status:200, ...file, attachment: action === 'download', filename } : message(404, 'Berkas tidak ditemukan.');
    }
+   if (action === 'convert') return await convertNamesWorkbook({ c, data, message });
    if (action === 'import') {
     if (!data) return message(405, 'Metode tidak tersedia.');
     return await importMaster({ c, resource, config, data, validate: validateMaster, colors: calendarColors, message });
    }
    if (action === 'list') {
+    params = new URLSearchParams(params);
+    if (config.defaultDirection && !params.has('direction')) params.set('direction', config.defaultDirection);
+    if (config.undefinedFilter && !params.has('undefined')) params.set('undefined', '1');
     const query = tableQuery(params, { sorts: config.sorts, defaultSort: config.sorts[0] });
-    const definitions = config.fields.filter(f => f.options && !f.relation).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: optionLabel(f, value) })) }));
+    const definitions = config.fields.filter(f => f.options && !f.relation).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: f.labels?.[value] ?? optionLabel(f, value) })) }));
+    if (config.undefinedFilter) definitions.push({ name: 'undefined', label: 'Nama Arab', options: [{ value: '1', label: 'Belum Terdefinisi' }, { value: '0', label: 'Semua Nama' }] });
     const filters = tableFilters(params, definitions);
     if (!query || !filters) return message(422, 'Pencarian, filter, urutan, atau halaman tidak valid.');
     const where = [active, `(${config.search.map(key => `\`${key}\` LIKE ? ESCAPE '!'`).join(' OR ')})`];
     const args = config.search.map(() => query.pattern);
-    for (const [key, value] of Object.entries(filters)) if (value) { where.push(`\`${key}\`=?`); args.push(value); }
+    if (filters.undefined === '1') where.push("nama_arab LIKE '%belum terdefinisi%'");
+    for (const [key, value] of Object.entries(filters)) if (value && key !== 'undefined') { where.push(`\`${key}\`=?`); args.push(value); }
     const [rows] = await c.execute(`SELECT *${config.count ? `,(SELECT COUNT(*) FROM ${config.count.table} WHERE ${config.count.key}=${config.table}.id) AS related_count` : ''},COUNT(*) OVER() AS table_total FROM ${config.table} WHERE ${where.join(' AND ')} ORDER BY \`${query.sort}\` ${query.direction.toUpperCase()},id LIMIT ${params.has('export') ? 10001 : query.limit} OFFSET ${params.has('export') ? 0 : query.offset}`, args);
     const columns = config.fields.filter(f => !['textarea', 'rich', 'file'].includes(f.type)).map(f => ({ key: f.key, label: f.label, ...(f.options ? { value: row => f.labels?.[String(row[f.key])] ?? optionLabel(f, String(row[f.key])) } : {}) }));
     let authors = {};
@@ -155,7 +166,7 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
      ...(config.view && has(access, config, 'view') ? [{ label: 'Detail', href: `${base}/${row.id}/view` }] : []),
      ...(config.singleDelete && has(access, config, 'delete') ? [{ label: 'Hapus', href: `${base}/${row.id}/delete` }] : [])
     ]) });
-    return { status: 200, title: config.title, body: `<section>${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${resource !== 'nama-kota' || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key)?.label || key).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') ? { action: `${base}/delete`, csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Data dihapus secara lunak.' : '' } : null })}</section>` };
+    return { status: 200, title: config.title, body: `<section>${config.convertible && has(access, config, 'create') ? `<p><a href="${base}/conversion-template">Template konversi nama</a></p><form class="master-convert" method="post" action="${base}/convert" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Konversi batch Latin ke Arab (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Unduh hasil konversi</button></form>` : ''}${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${resource !== 'nama-kota' || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key)?.label || key).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') ? { action: `${base}/delete`, csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Data dihapus secara lunak.' : '' } : null })}</section>` };
    }
    if (action === 'bulkDelete' || action === 'delete') {
     if (!data) {

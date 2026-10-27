@@ -9,6 +9,7 @@ import { createAuthHandler } from '../src/auth.js';
 import { masterResources, masterRoute, createDashboardMasters } from '../src/dashboard-masters.js';
 
 const sample = {
+ 'perpustakaan-nama': { nama_latin: '100% <Uji>', nama_arab: 'Belum terdefinisi', status: '1' },
  'program-pendidikan': { nama_program: '100% <Uji>', deskripsi: '<p>Deskripsi <strong>program</strong></p><script>alert(1)</script>', list_target: '<ul><li>Target</li></ul>', biaya_spp: '100000' },
  'kalender-akademik': { tanggal: '2026-10-27', tanggal_selesai: '2026-10-28', kegiatan: '100% <Uji>', keterangan: 'Uji', warna: '#083e6b' },
  prestasi: { nama: '100% <Uji>', peringkat: '1', nama_lomba: 'Lomba', tingkat: 'Nasional', penyelenggara: 'Mahad', tahun: '2026' },
@@ -120,7 +121,7 @@ for (const [resource, config] of Object.entries(masterResources).filter(([key]) 
    const template = await fetch(base + '/template', { headers }); assert.equal(template.status, 200);
    const book = new ExcelJS.Workbook(); await book.xlsx.load(Buffer.from(await template.arrayBuffer()));
    const sheet = book.worksheets[0];
-   const values = resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Kegiatan impor', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['BOGOR', 'بوغور'] : ['Peserta impor', 'Juara 1', 'Lomba', 'Nasional', 'Mahad', 2026];
+   const values = resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Kegiatan impor', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['BOGOR', 'بوغور'] : resource === 'perpustakaan-nama' ? ['Nama impor', 'عربي', '2'] : ['Peserta impor', 'Juara 1', 'Lomba', 'Nasional', 'Mahad', 2026];
    sheet.addRow(values);
    const upload = async bytes => { const form = new FormData(); form.set('_csrf', 'csrf'); form.set('workbook', new Blob([bytes]), 'uji.xlsx'); return fetch(base + '/import', { method: 'POST', headers: { ...headers, origin }, body: form, redirect: 'manual' }); };
    assert.equal((await upload(Buffer.from('bad'))).status, 422);
@@ -144,6 +145,32 @@ for (const [resource, config] of Object.entries(masterResources).filter(([key]) 
    assert.equal((await upload(Buffer.from(await book.xlsx.writeBuffer()))).status, 422);
    const [[after]] = await c.query(`SELECT COUNT(*) AS n FROM ${config.table}`); assert.equal(after.n, before.n);
    const denied = await call('template', { access: { permissions: [] } }); assert.equal(denied.status, 403);
+  }
+  if (resource === 'perpustakaan-nama') {
+   assert.equal((await call('convert')).status, 405);
+   assert.equal((await call('convert', { access: { permissions: ['create_' + config.permission] } })).status, 403);
+   const template = await fetch(base + '/conversion-template', { headers }); assert.equal(template.status, 200);
+   const book = new ExcelJS.Workbook(); await book.xlsx.load(Buffer.from(await template.arrayBuffer()));
+   const sheet = book.worksheets[0]; assert.equal(sheet.getCell('A1').value, 'nama_latin');
+   await c.execute("INSERT INTO perpustakaan_namas (nama_latin,nama_arab,status) VALUES ('ahmad','أحمد','2'),('al hasan','الحسن','2')");
+   sheet.addRow(['Ahmad AL Hasan Baru']); sheet.addRow(['Baru ahmad']);
+   const bytes = Buffer.from(await book.xlsx.writeBuffer());
+   const form = new FormData(); form.set('_csrf', 'csrf'); form.set('workbook', new Blob([bytes]), 'nama.xlsx');
+   const converted = await fetch(base + '/convert', { method: 'POST', headers: { ...headers, origin }, body: form });
+   assert.equal(converted.status, 200); assert.match(converted.headers.get('content-type'), /spreadsheetml/);
+   const result = new ExcelJS.Workbook(); await result.xlsx.load(Buffer.from(await converted.arrayBuffer()));
+   assert.equal(result.worksheets[0].getCell('B2').value, 'أحمد الحسن baru Belum terdefinisi');
+   assert.equal(result.worksheets[0].getCell('B3').value, 'baru Belum terdefinisi أحمد');
+   const [[unknown]] = await c.execute("SELECT COUNT(*) AS n FROM perpustakaan_namas WHERE nama_latin='baru' AND status='1'"); assert.equal(unknown.n, 1);
+   const [[before]] = await c.execute('SELECT COUNT(*) AS n FROM perpustakaan_namas');
+   sheet.addRow([{ formula: '1+1', result: 2 }]);
+   assert.equal((await call('convert', { data: { workbook: Buffer.from(await book.xlsx.writeBuffer()) } })).status, 422);
+   const [[after]] = await c.execute('SELECT COUNT(*) AS n FROM perpustakaan_namas'); assert.equal(after.n, before.n);
+   assert.equal((await call('convert', { data: { workbook: Buffer.from('bad') } })).status, 422);
+   assert.equal((await call('convert', { data: { workbook: Buffer.alloc(1048577) } })).status, 422);
+   const defaults = await call('list'); assert.doesNotMatch(defaults.body, /أحمد/); assert.match(defaults.body, /Belum Terverifikasi/);
+   assert.match((await call('list', { params: new URLSearchParams('undefined=0&status=2') })).body, /أحمد/);
+   assert.equal((await call('list', { params: new URLSearchParams('undefined=bad') })).status, 422);
   }
   access.permissions = [];
   assert.equal((await fetch(base, { headers })).status, 403);

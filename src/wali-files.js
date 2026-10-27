@@ -1,6 +1,7 @@
+import { studentRoot, studentFile } from './student-storage.js';
 import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, realpath, unlink, writeFile } from 'node:fs/promises';
-import { resolve, sep, extname } from 'node:path';
+import { sep } from 'node:path';
 import sharp from 'sharp';
 import { pool } from './db.js';
 
@@ -31,12 +32,13 @@ export function candidateFiles(row) {
   const diplomas={'Madrasah':'sd',"Darul 'Ilmi":'smp',"Ma'had 'Aly":'sma'};
   if(payments[row.jenjang])fields.push([`foto_pembayaran_psb_${payments[row.jenjang]}`,'Bukti Pembayaran']);
   if(diplomas[row.jenjang])fields.push([`foto_ijazah_${diplomas[row.jenjang]}`,'Ijazah']);
+  if (["Darul 'Ilmi", "Ma'had 'Aly"].includes(row.jenjang)) fields.push([row.jenjang === "Darul 'Ilmi" ? 'foto_surat_komitment_darul_ilmi' : 'foto_surat_komitment_mahad_aly','Surat Komitmen']);
   return fields;
 }
 const validId = id => /^[1-9]\d{0,14}$/.test(id);
 const allowed = (access, mutation, scope) => scope==='documents' ? (mutation ? access.permissions.includes('update_berkas::santri::wali') : access.permissions.includes('view_any_berkas::santri::wali') || access.permissions.includes('update_berkas::santri::wali')) : access.permissions.includes('view_any_santri::wali') && (!mutation || access.permissions.includes('update_santri::wali'));
 const select = `SELECT s.*, sc.id IS NOT NULL AS status_defined, (SELECT f.path FROM foto_santris f WHERE f.santri_id=s.id ORDER BY f.id LIMIT 1) AS foto FROM santris s LEFT JOIN status_catatan sc ON sc.status=s.status WHERE s.id=? AND s.no_kk=?`;
-export function createWaliFiles(db=pool, root=new URL('../storage/uploads/',import.meta.url)) {
+export function createWaliFiles(db=pool, root=studentRoot) {
   async function record(c,id,kk,lock=false) { const [rows]=await c.execute(select+(lock?' FOR UPDATE':''),[id,kk]); return rows[0]; }
   return async function files({user,access,id,field,action='read',image,scope='card'}) {
     const mutation=action!=='read';
@@ -61,16 +63,19 @@ export function createWaliFiles(db=pool, root=new URL('../storage/uploads/',impo
       if(!mutation) {
         if(!row[field])return {status:404};
         try {
-          const base=await realpath(root), file=await realpath(resolve(base,row[field]));
-          if(!file.startsWith(base+sep)||!['.jpg','.jpeg','.png','.webp'].includes(extname(file).toLowerCase()))return {status:404};
+          const stored=await studentFile(row[field],root);
+          if(!stored)return {status:404};
+          const {file}=stored;
           const content=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize({height:1080,withoutEnlargement:true}).jpeg({quality:90}).toBuffer();
           return {status:200,content};
         } catch { return {status:404}; }
       }
       if(action==='upload') {
         const dir=new URL('uploads/node-wali/',root); await mkdir(dir,{recursive:true});
+        const base=await realpath(root), destination=await realpath(dir);
+        if(!destination.startsWith(base+sep))throw new Error('Lokasi unggahan tidak valid.');
         path='uploads/node-wali/'+randomBytes(24).toString('hex')+'.jpg';
-        await writeFile(new URL(path,root),converted,{mode:0o600,flag:'wx'});
+        await writeFile(new URL(path,root),converted,{mode:0o644,flag:'wx'});
       }
       if(field==='foto') {
         await c.execute('DELETE FROM foto_santris WHERE santri_id=?',[id]);

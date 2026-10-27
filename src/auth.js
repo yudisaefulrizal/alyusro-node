@@ -99,7 +99,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(masterPage){const result=await masters({...masterPage,user,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,masterPage.resource);}
         const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
         if(candidateFile){const result=await files({user,access,id:candidateFile[1],field:candidateFile[2],scope:'candidate'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
-        const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete|zip))?$/);
+        const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete|zip|print))?$/);
         if(candidatePage){const result=await candidatesHandler({access,action:candidatePage[2]||'list',id:candidatePage[1],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'calon-santri');}
         const admissionPage=path.match(/^\/dashboard\/penerimaan-santri(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);
         if(admissionPage){const action=admissionPage[1]?'create':admissionPage[3]?'edit':'list';const result=await admissionsAdminHandler({access,action,id:admissionPage[2],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'penerimaan-santri');}
@@ -127,7 +127,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
       }
       const route=masterRoute(path), contentUpload=!!route && masterResources[route.resource].fields.some(f=>f.type==='file');
-      const data=await readForm(req,route?1000000:16384,route?.action==='import'?'workbook':contentUpload?'upload':'avatar',contentUpload,!!route);formData=data;
+      const data=await readForm(req,route?1000000:16384,['import','convert'].includes(route?.action)?'workbook':contentUpload?'upload':'avatar',contentUpload,!!route);formData=data;
       if(!equal(data._csrf,s.csrf))throw new FormError('Sesi formulir kedaluwarsa. Muat ulang halaman dan coba lagi.',403);
       const origin=req.headers.origin;
       const allowedOrigin=process.env.NODE_AUTH_PUBLIC_URL ? new URL(process.env.NODE_AUTH_PUBLIC_URL).origin : `${secure?'https':'http'}://${req.headers.host}`;
@@ -160,7 +160,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         return redirect('/dashboard/login');
       }
       const masterAction=masterRoute(path);
-      if(masterAction){if(['list','view','template','file','download'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
+      if(masterAction){if(['list','view','template','conversion-template','file','download'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):moduleResult(result,masterAction.resource);}
       if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
       const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
       if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}

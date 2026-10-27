@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 
 export function importHeaders(resource) {
  if (resource === 'kalender-akademik') return ['tahun', 'bulan', 'tanggal', 'tahun_selesai', 'bulan_selesai', 'tanggal_selesai', 'kegiatan', 'keterangan', 'warna'];
+ if (resource === 'perpustakaan-nama') return ['nama_latin', 'nama_arab', 'status'];
  if (resource === 'nama-kota') return ['nama_latin', 'nama_arab'];
  return ['nama', 'peringkat', 'nama_lomba', 'tingkat', 'penyelenggara', 'tahun'];
 }

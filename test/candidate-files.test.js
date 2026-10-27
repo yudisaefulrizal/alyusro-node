@@ -9,7 +9,7 @@ import { candidateFiles, createWaliFiles } from '../src/wali-files.js';
 import { createCandidates } from '../src/candidates.js';
 const access={permissions:['view_any_calon::santri']};
 test('candidate document types follow the Laravel level mapping',()=>{
- for(const [level,payment,diploma] of [['Madrasah','madrasah','sd'],["Darul 'Ilmi",'darul_ilmi','smp'],["Ma'had 'Aly",'mahad_aly','sma']]) assert.deepEqual(candidateFiles({jenjang:level}).map(([f])=>f),['foto','foto_akta_lahir','foto_kartu_keluarga',`foto_pembayaran_psb_${payment}`,`foto_ijazah_${diploma}`]);
+ for(const [level,payment,diploma] of [['Madrasah','madrasah','sd'],["Darul 'Ilmi",'darul_ilmi','smp'],["Ma'had 'Aly",'mahad_aly','sma']]) assert.deepEqual(candidateFiles({jenjang:level}).map(([f])=>f),['foto','foto_akta_lahir','foto_kartu_keluarga',`foto_pembayaran_psb_${payment}`,`foto_ijazah_${diploma}`,...(level==='Madrasah'?[]:[level==="Darul 'Ilmi"?'foto_surat_komitment_darul_ilmi':'foto_surat_komitment_mahad_aly'])]);
  assert.equal(candidateFiles({jenjang:'Mahdon Tarbawi'}).at(-1)[0],'foto_pembayaran_psb_mahdon_tarbawi');
 });
 test('candidate files enforce permission, eligible record, level, path and read-only access',async()=>{

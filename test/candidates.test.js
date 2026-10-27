@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs';
 import { createCandidates } from '../src/candidates.js';
 function fixture(){
  const calls=[];
- const db={getConnection:async()=>({release(){},async execute(sql,args=[]){calls.push({sql,args});if(sql.includes('FROM status_catatan'))return [[{status:'Menunggu'},{status:'Santri'}]];if(sql.includes('FROM penerimaan_santris'))return [[{id:2,kode_gelombang:'G2'}]];if(sql.startsWith('SELECT id,nama,status'))return [[{id:1,nama:'<Ali>',status:'Menunggu'}]];if(sql.startsWith('UPDATE')||sql.startsWith('DELETE'))return [{affectedRows:1}];return [[{id:1,nama:'<Ali>',nomor_pendaftaran:'P1',status:'Menunggu',table_total:1}]];}})};
+ const db={getConnection:async()=>({release(){},async beginTransaction(){},async commit(){},async rollback(){},async execute(sql,args=[]){calls.push({sql,args});if(/SELECT id FROM (ijazahs|ijazah_darul_ilmis|ijazah_mahad_alies|setorans|sabaq)/.test(sql))return [[]];if(sql.includes('FROM status_catatan'))return [[{status:'Menunggu'},{status:'Santri'}]];if(sql.includes('FROM penerimaan_santris'))return [[{id:2,kode_gelombang:'G2'}]];if(sql.startsWith('SELECT id,nama,status'))return [[{id:1,nama:'<Ali>',status:'Menunggu'}]];if(sql.startsWith('UPDATE')||sql.startsWith('DELETE'))return [{affectedRows:1}];return [[{id:1,nama:'<Ali>',nomor_pendaftaran:'P1',status:'Menunggu',table_total:1}]];}})};
  return {run:createCandidates(db),calls};
 }
 const access={permissions:['view_any_calon::santri','update_calon::santri']};
@@ -26,7 +26,7 @@ test('multiple filters and inclusive dates propagate to query and export links',
  for(const query of ['from=2026-02-30','from=2026-02-01&until=2026-01-01','status=Menunggu&status=invalid'])assert.equal((await run({access,params:new URLSearchParams(query)})).status,422);
 });
 test('notes and deletion require their own permissions and validate input',async()=>{
- const {run,calls}=fixture();assert.equal((await run({access:{permissions:[]},action:'note',id:'1',data:{catatan:'x'}})).status,403);assert.equal((await run({access,action:'delete',id:'1',data:{}})).status,403);assert.equal((await run({access,action:'note',id:'1',data:{catatan:'x'.repeat(256)}})).status,422);assert.equal((await run({access,action:'note',id:'1',data:{catatan:'Perbaiki data'}})).status,303);assert.ok(calls.some(c=>c.sql.startsWith('UPDATE')&&c.args[0]==='Perbaiki data'));assert.equal((await run({access:{permissions:['delete_calon::santri']},action:'delete',id:'1',data:{}})).status,303);assert.ok(calls.some(c=>c.sql.startsWith('DELETE')&&c.sql.includes('status NOT IN')));
+ const {run,calls}=fixture();assert.equal((await run({access:{permissions:[]},action:'note',id:'1',data:{catatan:'x'}})).status,403);assert.equal((await run({access,action:'delete',id:'1',data:{}})).status,403);assert.equal((await run({access,action:'note',id:'1',data:{catatan:'x'.repeat(256)}})).status,422);assert.equal((await run({access,action:'note',id:'1',data:{catatan:'Perbaiki data'}})).status,303);assert.ok(calls.some(c=>c.sql.startsWith('UPDATE')&&c.args[0]==='Perbaiki data'));assert.equal((await run({access:{permissions:['delete_calon::santri']},action:'delete',id:'1',data:{confirm:'HAPUS'}})).status,303);assert.ok(calls.some(c=>c.sql.startsWith('DELETE')&&c.sql.includes('status NOT IN')));
 });
 test('bulk status validates selected IDs, permission and status before changing candidates',async()=>{
  const {run,calls}=fixture();
@@ -42,7 +42,7 @@ test('candidate search covers contact, gender and date and defaults to newest',a
  const query=calls.find(c=>c.sql.includes('COUNT(*) OVER'));assert.match(query.sql,/s\.jenis_kelamin LIKE/);assert.match(query.sql,/s\.nomor_hp LIKE/);assert.match(query.sql,/CAST\(s\.created_at AS CHAR\) LIKE/);assert.match(query.sql,/ORDER BY s\.created_at DESC/);assert.match(result.body,/Ubah status terpilih/);
 });
 test('WhatsApp links normalize numbers and encode the recipient name',async()=>{
- const db={getConnection:async()=>({release(){},async execute(sql){if(sql.includes('FROM status_catatan'))return [[]];if(sql.includes('FROM penerimaan_santris'))return [[]];return [[{id:1,nama:'<Ali>',nomor_hp:'0812-345',table_total:1}]];}})};
+ const db={getConnection:async()=>({release(){},async beginTransaction(){},async commit(){},async rollback(){},async execute(sql){if(sql.includes('FROM status_catatan'))return [[]];if(sql.includes('FROM penerimaan_santris'))return [[]];return [[{id:1,nama:'<Ali>',nomor_hp:'0812-345',table_total:1}]];}})};
  const result=await createCandidates(db)({access});assert.match(result.body,/https:\/\/wa\.me\/62812345\?text=/);assert.match(result.body,/%3CAli%3E/);assert.match(result.body,/0812-345/);
 });
 test('additional candidate column sorts apply to the list and export and reject SQL expressions',async()=>{
@@ -86,7 +86,7 @@ test('candidate ZIP includes only permitted files and selected candidates',async
  const root=await mkdtemp(join(tmpdir(),'candidate-zip-'));const outside=await mkdtemp(join(tmpdir(),'candidate-outside-'));
  try{
   await writeFile(join(root,'payment.jpg'),'payment');await writeFile(join(root,'identity.png'),'identity');await writeFile(join(outside,'secret.jpg'),'secret');await symlink(join(outside,'secret.jpg'),join(root,'escape.jpg'));
-  let sql,args;const db={getConnection:async()=>({release(){},async execute(q,a){sql=q;args=a;return [[{id:1,foto_akta_lahir:'identity.png',foto_pembayaran_psb_madrasah:'payment.jpg',foto_kartu_keluarga:'escape.jpg'}]];}})};
+  let sql,args;const db={getConnection:async()=>({release(){},async beginTransaction(){},async commit(){},async rollback(){},async execute(q,a){sql=q;args=a;return [[{id:1,foto_akta_lahir:'identity.png',foto_pembayaran_psb_madrasah:'payment.jpg',foto_kartu_keluarga:'escape.jpg'}]];}})};
   const run=createCandidates(db,root);
   assert.equal((await run({access:{permissions:[]},action:'zip',id:'1'})).status,403);
   assert.equal((await run({access,action:'bulkZip',data:{invalid:'1'}})).status,422);

@@ -24,7 +24,7 @@ try {
   await c.query(source.match(/CREATE TABLE[\s\S]*?ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/)[0].replace('CREATE TABLE', 'CREATE TEMPORARY TABLE'));
   createdTables.push(config.table);
   const fields = config.fields.map(f => f.key), sample = Object.fromEntries(config.fields.map(f => [f.key, f.options ? f.options[0] : f.type === 'number' ? 1 : f.type === 'date' ? '2026-10-27' : 'Contoh ' + f.label]));
-  for (let n = 1; n <= 12; n++) await c.execute(`INSERT INTO ${config.table} (${fields.map(f => '`' + f + '`')}${config.slug ? ',slug' : ''},created_at,updated_at) VALUES (${fields.map(() => '?')}${config.slug ? ',?' : ''},NOW(),NOW())`, [...fields.map(f => f === 'nama_tema' ? sample[f] + n : sample[f]), ...(config.slug ? ['contoh-' + n] : [])]);
+  for (let n = 1; n <= 12; n++) await c.execute(`INSERT INTO ${config.table} (${fields.map(f => '`' + f + '`')}${config.slug ? ',slug' : ''},created_at,updated_at) VALUES (${fields.map(() => '?')}${config.slug ? ',?' : ''},NOW(),NOW())`, [...fields.map(f => f === 'nama_arab' && resource === 'perpustakaan-nama' ? 'Belum terdefinisi' : f === 'nama_tema' ? sample[f] + n : sample[f]), ...(config.slug ? ['contoh-' + n] : [])]);
   for (const [table, key] of config.related || []) { await c.query(`CREATE TEMPORARY TABLE ${table} (id BIGINT PRIMARY KEY,${key} BIGINT)`); createdTables.push(table); }
  }
  const masters = createDashboardMasters({ getConnection: async () => ({ execute: (...args) => c.execute(...args), beginTransaction: () => c.beginTransaction(), commit: () => c.commit(), rollback: () => c.rollback(), release() {} }) });
@@ -91,7 +91,8 @@ try {
  await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.data-table-delete')]);
  await visit('/dashboard/struktur-mahad?q=Uji+Browser'); assert.ok(await page.$('.data-table-empty'));
  // Submit every newly migrated resource through the browser, then verify persisted values.
- for (const resource of ['program-pendidikan', 'kalender-akademik', 'prestasi', 'nama-kota', 'tema-soal']) {
+ for (const resource of ['program-pendidikan', 'kalender-akademik', 'prestasi', 'nama-kota', 'tema-soal', 'perpustakaan-nama']) {
+  if (process.env.MASTER_UI_RESOURCES && !process.env.MASTER_UI_RESOURCES.split(',').includes(resource)) continue;
   const config = masterResources[resource], path = '/dashboard/' + resource;
   const input = Object.fromEntries(config.fields.map(f => [f.key, f.options ? f.options[0] : f.type === 'date' ? '2026-10-27' : f.type === 'number' ? '2026' : 'Browser ' + f.label]));
   await visit(path + '/create');
@@ -124,18 +125,27 @@ try {
    const folder = await mkdtemp(join(tmpdir(), 'alyusro-import-'));
    try {
     const book = new ExcelJS.Workbook(), sheet = book.addWorksheet('Import'); sheet.addRow(importHeaders(resource));
-    sheet.addRow(resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Browser impor kegiatan', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['Browser impor kota', 'مدينة'] : ['Browser impor prestasi', 1, 'Lomba', 'Nasional', 'Mahad', 2026]);
+    sheet.addRow(resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Browser impor kegiatan', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['Browser impor kota', 'مدينة'] : resource === 'perpustakaan-nama' ? ['Browser impor nama', 'عربي', '1'] : ['Browser impor prestasi', 1, 'Lomba', 'Nasional', 'Mahad', 2026]);
     const filename = join(folder, 'uji.xlsx'); await writeFile(filename, Buffer.from(await book.xlsx.writeBuffer()));
-    await visit(path); await (await page.$('[name=workbook]')).uploadFile(filename);
+    await visit(path); await (await page.$('.master-import [name=workbook]')).uploadFile(filename);
     await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.master-import button[type=submit]')]);
     const [[last]] = await c.query(`SELECT * FROM ${config.table} ORDER BY id DESC LIMIT 1`); assert.match(last[resource === 'kalender-akademik' ? 'kegiatan' : config.fields[0].key], /[Bb]rowser impor/);
+    if (config.convertible) {
+     const names = new ExcelJS.Workbook(); names.addWorksheet('Nama').addRows([['nama_latin'],['Nama Browser Baru']]);
+     await writeFile(filename, Buffer.from(await names.xlsx.writeBuffer()));
+     await visit(path); await (await page.$('.master-convert [name=workbook]')).uploadFile(filename);
+     const download = page.waitForResponse(response => response.url().endsWith('/convert') && response.request().method() === 'POST');
+     await page.click('.master-convert button[type=submit]');
+     const response = await download; assert.equal(response.status(), 200); assert.match(response.headers()['content-type'], /spreadsheetml/);
+     const [[unknown]] = await c.execute("SELECT COUNT(*) AS n FROM perpustakaan_namas WHERE nama_latin='baru' AND status='1'"); assert.equal(unknown.n,1);
+    }
    } finally { await rm(folder, { recursive: true, force: true }); }
   }
  }
  const thumbs = await Promise.all(captures.map(async ({ capture }) => sharp(capture).resize({ width: 360, height: 300, fit: 'contain', background: '#ddd' }).png().toBuffer()));
  if (captures.length) await sharp({ create: { width: 1800, height: Math.ceil(captures.length / 5) * 300, channels: 3, background: '#ddd' } }).composite(thumbs.map((input, i) => ({ input, left: (i % 5) * 360, top: Math.floor(i / 5) * 300 }))).png().toFile(fileURLToPath(new URL('masters-contact-sheet.png', output)));
  if (!process.env.MASTER_UI_ACTIONS_ONLY) console.log('Master terpilih: desktop/HP, terang/gelap, data berisi/kosong, kolom tersimpan, keyboard, pagination, sort/filter, formulir/detail lulus.');
- console.log('Lima modul baru: tambah/edit, format rich text, impor workbook melalui browser dan screenshot formulir desktop/HP lulus.');
+ console.log('Modul terpilih: tambah/edit, impor workbook dan konversi yang tersedia melalui browser lulus.');
 } finally {
  if (browser) await browser.close();
  if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
