@@ -66,3 +66,5 @@
 .data-table-export{display:inline-block;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);line-height:20px;box-shadow:var(--shadow)}
 .data-table-filter input:not([type=hidden]){width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--input);color:var(--text)}
 @media(max-width:639px){.data-table th[data-column="0"],.data-table td[data-column="0"]{position:sticky;left:0;z-index:1;background:var(--panel);box-shadow:2px 0 3px #0000000d}.data-table thead th[data-column="0"]{z-index:2;background:var(--bg)}}
+/* Keep shared table menus reachable when the toolbar wraps on phones. */
+@media(max-width:639px){.data-table-tools{position:relative}.data-table-tools>.data-table-menu{position:static}.data-table-tools .data-table-menu-content{left:0;right:0;min-width:0}}

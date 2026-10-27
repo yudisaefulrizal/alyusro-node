@@ -1,3 +1,4 @@
+import { dashboardMasters, masterRoute } from './dashboard-masters.js';
 import { candidates } from './candidates.js';
 import { admissionsAdmin } from './admissions-admin.js';
 import { referralSources } from './referral-sources.js';
@@ -30,12 +31,12 @@ export async function verifyPassword(value,encoded) {
 }
 const dummyHash=bcrypt.hashSync('nonexistent-account-dummy-password',12);
 class FormError extends Error { constructor(message,status=422){super(message);this.status=status;} }
-async function readForm(req) {
+async function readForm(req, maxEncodedSize=16384) {
   const max=1100000;let size=0;const chunks=[];
   for await(const chunk of req){size+=chunk.length;if(size>max)throw new FormError('Data terlalu besar.',413);chunks.push(chunk);}
   const buffer=Buffer.concat(chunks);
   if(req.headers['content-type']?.startsWith('application/x-www-form-urlencoded')) {
-    if(size>16384)throw new FormError('Data terlalu besar.',413);
+    if(size>maxEncodedSize)throw new FormError('Data terlalu besar.',413);
     const entries=[...new URLSearchParams(buffer.toString())];
     if(new Set(entries.map(([k])=>k)).size!==entries.length)throw new FormError('Formulir tidak valid.',400);
     return Object.fromEntries(entries);
@@ -53,7 +54,7 @@ async function readForm(req) {
   }
   throw new FormError('Format formulir tidak didukung.',415);
 }
-export function createAuthHandler({store=authStore,students=waliStudents,editStudent=waliEdit,registerStudent=waliRegistration,wali=waliWidget,files=waliFiles,documents=waliDocuments,notes=statusNotes,referrals=referralSources,admissionsAdminHandler=admissionsAdmin,candidatesHandler=candidates,stats=dashboardStats,admissions=admissionStats,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
+export function createAuthHandler({store=authStore,students=waliStudents,editStudent=waliEdit,registerStudent=waliRegistration,wali=waliWidget,files=waliFiles,documents=waliDocuments,notes=statusNotes,referrals=referralSources,admissionsAdminHandler=admissionsAdmin,candidatesHandler=candidates,masters=dashboardMasters,stats=dashboardStats,admissions=admissionStats,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
   const cookieName=secure?'__Host-alyusro_node_session':'alyusro_node_session';
   const duration=s=>s.user_id?(s.remember?400*86400:sessionMinutes*60):3600;
   return async function handleAuth(req,res,path) {
@@ -94,6 +95,8 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
           if(!file.startsWith(root+sep)||!/^fotoProfil\//.test(user.avatar_url)||!['.png','.jpg','.jpeg','.webp'].includes(extname(file).toLowerCase()))return send(404,'Foto tidak ditemukan.','text/plain');
           const image=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize(512,512,{fit:'inside',withoutEnlargement:true}).webp().toBuffer();return send(200,image,'image/webp');
         }
+        const masterPage=masterRoute(path);
+        if(masterPage){const result=await masters({...masterPage,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,masterPage.resource);}
         const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
         if(candidateFile){const result=await files({user,access,id:candidateFile[1],field:candidateFile[2],scope:'candidate'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
         const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete|zip))?$/);
@@ -123,7 +126,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(path==='/dashboard/password-reset/reset'){const params=new URL(req.url,'http://localhost').searchParams;return page(path,'',200,{email:params.get('email'),token:params.get('token')});}
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
       }
-      const data=await readForm(req);formData=data;
+      const data=await readForm(req,masterRoute(path)?250000:16384);formData=data;
       if(!equal(data._csrf,s.csrf))throw new FormError('Sesi formulir kedaluwarsa. Muat ulang halaman dan coba lagi.',403);
       const origin=req.headers.origin;
       const allowedOrigin=process.env.NODE_AUTH_PUBLIC_URL ? new URL(process.env.NODE_AUTH_PUBLIC_URL).origin : `${secure?'https':'http'}://${req.headers.host}`;
@@ -155,6 +158,8 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(!await store.reset(data.email,hash(data.token),await bcrypt.hash(data.password,12),token()))throw new FormError('Tautan reset tidak valid atau sudah kedaluwarsa.');
         return redirect('/dashboard/login');
       }
+      const masterAction=masterRoute(path);
+      if(masterAction){if(['list','view'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
       if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
       const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
       if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
