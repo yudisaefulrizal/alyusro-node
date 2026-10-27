@@ -1,0 +1,194 @@
+[
+  {
+    "label": "Dokumen",
+    "group": "",
+    "icon": "ysr-artikel",
+    "permission": "view_any_dokumen"
+  },
+  {
+    "label": "Perpustakaan Nama",
+    "group": "",
+    "icon": "ysr-terjemah",
+    "permission": "view_any_perpustakaan::nama"
+  },
+  {
+    "label": "Wisuda",
+    "group": "Akademik",
+    "icon": "ysr-sekolah",
+    "permission": "view_any_event::mahad"
+  },
+  {
+    "label": "Kalender Akademik",
+    "group": "Akademik",
+    "icon": "ysr-kalender",
+    "permission": "view_any_kalender::akademik"
+  },
+  {
+    "label": "Nama Kota",
+    "group": "Akademik",
+    "icon": "ysr-map",
+    "permission": "view_any_nama::kota"
+  },
+  {
+    "label": "Prestasi",
+    "group": "Akademik",
+    "icon": "ysr-prestasi",
+    "permission": "view_any_prestasi"
+  },
+  {
+    "label": "Program Pendidikan",
+    "group": "Akademik",
+    "icon": "ysr-sekolah",
+    "permission": "view_any_program::pendidikan"
+  },
+  {
+    "label": "Santri",
+    "group": "Akademik",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_santri"
+  },
+  {
+    "label": "Peserta",
+    "group": "CBT",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_c::b::t::peserta"
+  },
+  {
+    "label": "Soal CBT",
+    "group": "CBT",
+    "icon": "ysr-kurikulum",
+    "permission": "view_any_c::b::t::soal"
+  },
+  {
+    "label": "Tema Soal",
+    "group": "CBT",
+    "icon": "ysr-kurikulum",
+    "permission": "view_any_c::b::t::tema::soal"
+  },
+  {
+    "label": "C B T Ujian",
+    "group": "CBT",
+    "icon": "ysr-kurikulum",
+    "permission": "view_any_c::b::t::ujian"
+  },
+  {
+    "label": "Fasilitas",
+    "group": "Fasilitas",
+    "icon": "ysr-fasilitas",
+    "permission": "view_any_fasilitas"
+  },
+  {
+    "label": "Galeri Fasilitas",
+    "group": "Fasilitas",
+    "icon": "ysr-fasilitas",
+    "permission": "view_any_galeri::fasilitas"
+  },
+  {
+    "label": "Kategori Fasilitas",
+    "group": "Fasilitas",
+    "icon": "ysr-fasilitas",
+    "permission": "view_any_kategori::fasilitas"
+  },
+  {
+    "label": "Artikel",
+    "group": "Humas dan Dakwah",
+    "icon": "ysr-artikel",
+    "permission": "view_any_artikel"
+  },
+  {
+    "label": "Artikel Saya",
+    "group": "Humas dan Dakwah",
+    "icon": "ysr-artikel",
+    "permission": "view_any_artikel::saya"
+  },
+  {
+    "label": "Kategori Artikel",
+    "group": "Humas dan Dakwah",
+    "icon": "ysr-artikel",
+    "permission": "view_any_kategori::artikel"
+  },
+  {
+    "label": "Struktur Mahad",
+    "group": "Manajemen",
+    "icon": "ysr-struktur-organisasi",
+    "permission": "view_any_struktur::mahad"
+  },
+  {
+    "label": "Peran",
+    "group": "Pelindung",
+    "icon": "ysr-struktur-organisasi",
+    "permission": "view_any_role"
+  },
+  {
+    "label": "Calon Santri",
+    "group": "Penerimaan Santri",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_calon::santri"
+  },
+  {
+    "label": "Penerimaan Santri",
+    "group": "Penerimaan Santri",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_penerimaan::santri"
+  },
+  {
+    "label": "Sumber Informasi",
+    "group": "Penerimaan Santri",
+    "icon": "ysr-share",
+    "permission": "view_any_referral::source"
+  },
+  {
+    "label": "Status Catatan",
+    "group": "Penerimaan Santri",
+    "icon": "ysr-komen",
+    "permission": "view_any_status::catatan"
+  },
+  {
+    "label": "Menu",
+    "group": "Pengaturan",
+    "icon": "ysr-struktur-organisasi",
+    "permission": "view_any_menu"
+  },
+  {
+    "label": "User",
+    "group": "Pengaturan",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_user"
+  },
+  {
+    "label": "Audit Logs",
+    "group": "System",
+    "icon": "ysr-artikel",
+    "permission": "view_any_audit::log"
+  },
+  {
+    "label": "Dokumen santri",
+    "group": "Wali Santri",
+    "icon": "ysr-artikel",
+    "permission": "view_any_berkas::santri::wali"
+  },
+  {
+    "label": "Data Santri",
+    "group": "Wali Santri",
+    "icon": "ysr-pendaftaran",
+    "permission": "view_any_santri::wali"
+  },
+  {
+    "label": "Ijazah Darul Ilmi",
+    "group": "ijazah & Sertifikat",
+    "icon": "ysr-sekolah",
+    "permission": "view_any_ijazah::darul::ilmi"
+  },
+  {
+    "label": "Ijazah Mahad Aly",
+    "group": "ijazah & Sertifikat",
+    "icon": "ysr-sekolah",
+    "permission": "view_any_ijazah::mahad::aly"
+  },
+  {
+    "label": "Ijazah Madrasah",
+    "group": "ijazah & Sertifikat",
+    "icon": "ysr-sekolah",
+    "permission": "view_any_ijazah"
+  }
+]

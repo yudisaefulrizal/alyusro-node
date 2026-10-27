@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.log
+# Local copies contain user uploads and personal documents.
+storage/
+assets/legacy-public/
+public/storage-cache/

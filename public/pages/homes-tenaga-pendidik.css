@@ -1,0 +1,68 @@
+
+
+    .pendidik{
+        /* border: 2px solid #000000; */
+    }
+
+    /* asatidz styles */
+    .group-box-asatidz {
+        padding-top: 5px;
+        margin-top: auto;
+        /* border: 2px solid #000000; */
+        margin-left: 5px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+
+    .group-box-asatidz h2 {
+        text-align: center;
+        color: #000000;
+
+
+    }
+
+    .asatidz {
+        display: flex;
+        flex-wrap: wrap; /* Allow wrapping */
+        justify-content: center; /* Center the boxes */
+        gap: 5px; /* Space between boxes */
+        font-size: 10px;
+        padding-bottom: 50px;
+
+
+    }
+
+    .kepala_asatidz {
+        background-color: #083e6b;
+        border: 2px solid #ffffff;
+        border-radius: 10px;
+        padding: 15px 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        width: 150px; /* Set width of each box */
+        text-align: center; /* Center content inside the box */
+    }
+
+    .pendidik_asatidz {
+        font-weight: bold;
+        color: #f9f9f9;
+        font-size: 1em;
+        text-transform: uppercase;
+
+
+    }
+
+    .nama_asatidz {
+        font-style: italic;
+        color: #ffffff;
+        font-size: 1em;
+        text-transform: capitalize;
+
+    }
+
+    .foto_asatidz {
+    width: 100px; /* Set ukuran gambar */
+    height: 100px; /* Set tinggi gambar */
+    object-fit: cover; /* Agar gambar tetap proporsional */
+    border-radius: 50%; /* Membuat gambar menjadi lingkaran */
+    margin-bottom: 10px; /* Jarak antara gambar dan teks di bawahnya */
+}

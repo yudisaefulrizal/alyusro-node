@@ -1,0 +1,26 @@
+{
+  "name": "alyusro-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prototipe lokal website Ma'had Tahfizh Al Yusro",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test",
+    "auth:setup": "node scripts/setup-auth.js",
+    "auth:prune": "node scripts/prune-auth.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "busboy": "^1.6.0",
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1",
+    "puppeteer-core": "^25.16.0",
+    "sanitize-html": "^2.18.1",
+    "sharp": "^0.35.5"
+  }
+}

@@ -1,0 +1,94 @@
+
+
+        .isi_kontainer {
+            width: 95%;
+            margin: auto;
+        }
+
+        .isi_kontainer {
+            padding: 5px;
+            background-color: #f8f9fa; /* Warna latar belakang yang lembut */
+            border-radius: 5px; /* Menambahkan sudut membulat */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Bayangan halus */
+        }
+
+        .prestasi-table {
+            width: 100%; /* Mengisi lebar penuh */
+            border-collapse: collapse; /* Menghilangkan jarak antara border sel */
+            text-align: center;
+        }
+
+        .table-header {
+            background-color: #083e6b; /* Warna latar belakang header */
+            color: white; /* Warna teks header */
+            padding: 10px; /* Padding dalam header */
+            text-align: center; /* Rata kiri */
+            font-size: 8px;
+        }
+
+        /* Kelas khusus untuk setiap header */
+        .header-nama {
+            width: 20%; /* Set lebar untuk kolom Nama */
+        }
+        .header-peringkat {
+            width: 10%; /* Set lebar untuk kolom Peringkat */
+        }
+        .header-lomba {
+            width: 25%; /* Set lebar untuk kolom Perlombaan */
+        }
+        .header-tingkat {
+            width: 15%; /* Set lebar untuk kolom Tingkat */
+        }
+        .header-penyelenggara {
+            width: 20%; /* Set lebar untuk kolom Penyelenggara */
+        }
+        .header-tahun {
+            width: 10%; /* Set lebar untuk kolom Tahun */
+        }
+
+        .prestasi-row {
+            border-bottom: 1px solid #dee2e6; /* Border bawah pada setiap baris */
+            font-size: 10px;
+        }
+
+        .prestasi-row:nth-child(even) {
+            background-color: #f2f2f2; /* Warna latar belakang untuk baris genap */
+        }
+
+        .prestasi-nama,
+        .prestasi-peringkat,
+        .prestasi-nama-lomba,
+        .prestasi-tingkat,
+        .prestasi-penyelenggara,
+        .prestasi-tahun {
+            padding: 5px; /* Padding dalam sel */
+            color: #343a40; /* Warna teks */
+        }
+
+        .prestasi-peringkat {
+            font-style: italic; /* Menerapkan gaya italic untuk peringkat */
+        }
+
+        .prestasi-nama-lomba {
+            font-weight: 600; /* Menebalkan nama lomba */
+        }
+
+        @media (min-width: 400px) {
+            .prestasi-row {
+                font-size: 10px;
+            }
+
+            .table-header {
+                font-size: 10px;
+            }
+        }
+
+        @media (min-width: 600px) {
+            .prestasi-row {
+                font-size: 12px;
+            }
+
+            .table-header {
+                font-size: 12px;
+            }
+        }

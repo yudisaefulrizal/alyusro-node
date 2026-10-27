@@ -1,0 +1,13 @@
+for(const input of document.querySelectorAll('input[type=password]')){
+ const toggle=document.createElement('button');toggle.type='button';toggle.className='password-toggle';toggle.textContent='Lihat';toggle.setAttribute('aria-label','Tampilkan kata sandi');toggle.setAttribute('aria-pressed','false');
+ toggle.addEventListener('click',()=>{const show=input.type==='password';input.type=show?'text':'password';toggle.textContent=show?'Sembunyikan':'Lihat';toggle.setAttribute('aria-label',show?'Sembunyikan kata sandi':'Tampilkan kata sandi');toggle.setAttribute('aria-pressed',String(show));});input.after(toggle);
+}
+const media=matchMedia('(prefers-color-scheme: dark)');let theme='system';try{theme=localStorage.getItem('theme')||'system';}catch{}
+function applyTheme(value){theme=['light','dark','system'].includes(value)?value:'system';document.documentElement.dataset.theme=theme==='system'?(media.matches?'dark':'light'):theme;for(const button of document.querySelectorAll('[data-theme-choice]'))button.setAttribute('aria-pressed',String(button.dataset.themeChoice===theme));}
+applyTheme(theme);media.addEventListener('change',()=>applyTheme(theme));
+for(const button of document.querySelectorAll('[data-theme-choice]'))button.addEventListener('click',()=>{applyTheme(button.dataset.themeChoice);try{localStorage.setItem('theme',theme);}catch{}});
+const sidebarButton=document.querySelector('.sidebar-toggle'),overlay=document.querySelector('.sidebar-overlay');
+function setSidebar(open){document.body.classList.toggle('sidebar-open',open);sidebarButton?.setAttribute('aria-expanded',String(open));if(overlay)overlay.hidden=!open;}
+sidebarButton?.addEventListener('click',()=>setSidebar(!document.body.classList.contains('sidebar-open')));overlay?.addEventListener('click',()=>{setSidebar(false);sidebarButton?.focus();});
+const account=document.querySelector('.account-menu');document.addEventListener('click',event=>{if(account&&!account.contains(event.target))account.open=false;});document.addEventListener('keydown',event=>{if(event.key==='Escape'){setSidebar(false);if(account?.open){account.open=false;account.querySelector('summary').focus();}}});
+for(const widget of document.querySelectorAll('.kk-widget')){const summary=widget.querySelector('.kk-summary'),editor=widget.querySelector('.kk-editor');function edit(value){summary.hidden=value;editor.hidden=!value;(value?editor.querySelector('input[name=nomor_kk]'):summary.querySelector('button')).focus();}widget.querySelector('[data-kk-edit]')?.addEventListener('click',()=>edit(true));widget.querySelector('[data-kk-cancel]')?.addEventListener('click',()=>edit(false));}

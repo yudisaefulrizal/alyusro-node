@@ -1,0 +1,1 @@
+Font disalin tanpa modifikasi dari vendor/mpdf/mpdf/ttfonts. Identitas dan hak cipta font tetap tersimpan dalam metadata berkas asli. mPDF-LICENSE.txt adalah lisensi paket sumber mPDF; metadata font menyimpan keterangan masing-masing font. sources.json mencatat sumber dan SHA-256.

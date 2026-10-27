@@ -1,0 +1,42 @@
+[
+  {
+    "file": "XB Riyaz.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/XB Riyaz.ttf",
+    "sha256": "5e113bf5533436c34b9f038c0fc554a31857f08eff216b6618166acfc73fce25"
+  },
+  {
+    "file": "XB RiyazBd.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/XB RiyazBd.ttf",
+    "sha256": "b3672410bd26bf4d9d26616c4e9a2e84d8a072f1997bf62edd3ac839cdec6f42"
+  },
+  {
+    "file": "XB RiyazIt.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/XB RiyazIt.ttf",
+    "sha256": "774db683aca6855d9860bb365d8ae22d42f37ad1aee3cc96e0fee714b5c44add"
+  },
+  {
+    "file": "XB RiyazBdIt.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/XB RiyazBdIt.ttf",
+    "sha256": "6b7d24e56216dde9c68d8fb766c369983feefc4fef28ebb867d9249cf5d9b225"
+  },
+  {
+    "file": "DejaVuSansCondensed.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/DejaVuSansCondensed.ttf",
+    "sha256": "5d5bf19efa3fe5a0f77fbdb163668a6fa7e81ac9df470034f7c91ee863ba872d"
+  },
+  {
+    "file": "DejaVuSansCondensed-Bold.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/DejaVuSansCondensed-Bold.ttf",
+    "sha256": "ff6e1be053d61e93652a248c14930f5b777fe05a517ce783095e93f02e906c54"
+  },
+  {
+    "file": "DejaVuSansCondensed-Oblique.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/DejaVuSansCondensed-Oblique.ttf",
+    "sha256": "e3f8c7264ac932178831c74385035177a2e30bd8322da1dc56706efcbc52079c"
+  },
+  {
+    "file": "DejaVuSansCondensed-BoldOblique.ttf",
+    "source": "vendor/mpdf/mpdf/ttfonts/DejaVuSansCondensed-BoldOblique.ttf",
+    "sha256": "e8d81e536125e198357964f7ba08039033532117a376fbd6d0975e37bfe363ae"
+  }
+]

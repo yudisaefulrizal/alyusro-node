@@ -1,0 +1,186 @@
+/* icon */
+@font-face {
+    font-family: 'alyusro-icon';
+    src: url('/fonts/alyusro-icon.eot?n82k32');
+    src: url('/fonts/alyusro-icon.eot?n82k32#iefix') format('embedded-opentype'),
+    url('/fonts/alyusro-icon.ttf?n82k32') format('truetype'),
+    url('/fonts/alyusro-icon.woff?n82k32') format('woff'),
+    url('/fonts/alyusro-icon.svg?n82k32#alyusro-icon') format('svg');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+[class^="ysr-"], [class*=" ysr-"] {
+    /* use !important to prevent issues with browser extensions that change fonts */
+    font-family: 'alyusro-icon' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ysr-link:before {
+    content: "\e91b";
+    color: currentColor;
+}
+
+.ysr-whatsapps:before {
+    content: "\e91c";
+    color: currentColor;
+}
+
+.ysr-youtube:before {
+    content: "\e91d";
+    color: currentColor;
+}
+
+.ysr-facebook:before {
+    content: "\e91e";
+    color: currentColor;
+}
+
+.ysr-instagram:before {
+    content: "\e91f";
+    color: currentColor;
+}
+
+.ysr-artikel:before {
+    content: "\e900";
+    color: currentColor;
+}
+
+.ysr-download:before {
+    content: "\e901";
+    color: currentColor;
+}
+
+.ysr-ekstrakulikuler:before {
+    content: "\e902";
+    color: currentColor;
+}
+
+.ysr-fasilitas:before {
+    content: "\e903";
+    color: currentColor;
+}
+
+.ysr-jadwal-sholat:before {
+    content: "\e904";
+    color: currentColor;
+}
+
+.ysr-kajian:before {
+    content: "\e905";
+    color: currentColor;
+}
+
+.ysr-kalender:before {
+    content: "\e906";
+    color: currentColor;
+}
+
+.ysr-komen:before {
+    content: "\e907";
+    color: currentColor;
+}
+
+.ysr-kurikulum-bahasa-arab:before {
+    content: "\e908";
+    color: currentColor;
+}
+
+.ysr-kurikulum:before {
+    content: "\e909";
+    color: currentColor;
+}
+
+.ysr-like:before {
+    content: "\e90a";
+    color: currentColor;
+}
+
+.ysr-login:before {
+    content: "\e90b";
+    color: currentColor;
+}
+
+.ysr-logout:before {
+    content: "\e90c";
+    color: currentColor;
+}
+
+.ysr-map:before {
+    content: "\e90d";
+    color: currentColor;
+}
+
+.ysr-pendaftaran:before {
+    content: "\e90e";
+    color: currentColor;
+}
+
+.ysr-pendidik:before {
+    content: "\e90f";
+    color: currentColor;
+}
+
+.ysr-play-video:before {
+    content: "\e910";
+    color: currentColor;
+}
+
+.ysr-poin-map:before {
+    content: "\e911";
+    color: currentColor;
+}
+
+.ysr-prestasi:before {
+    content: "\e912";
+    color: currentColor;
+}
+
+.ysr-sekolah:before {
+    content: "\e913";
+    color: currentColor;
+}
+
+.ysr-share:before {
+    content: "\e914";
+    color: currentColor;
+}
+
+.ysr-struktur-organisasi:before {
+    content: "\e915";
+    color: currentColor;
+}
+
+.ysr-tentang:before {
+    content: "\e916";
+    color: currentColor;
+}
+
+.ysr-terjemah:before {
+    content: "\e917";
+    color: currentColor;
+}
+
+.ysr-upload:before {
+    content: "\e918";
+    color: currentColor;
+}
+
+.ysr-vidio:before {
+    content: "\e919";
+    color: currentColor;
+}
+
+.ysr-vidio-banyak:before {
+    content: "\e91a";
+    color: currentColor;
+}
