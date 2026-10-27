@@ -1,3 +1,4 @@
+import { contentRoot, readContentFile } from './content-files.js';
 import { handleAuth } from './auth.js';
 import { handleArticlePdf } from './article-pdf.js';
 import http from 'node:http';
@@ -43,6 +44,14 @@ export const server = http.createServer(async (req, res) => {
         if (!branding && !fixed.includes(assetPath) && !publicAssets.has(assetPath)) {
           const allowed = await query("SELECT gambar AS path FROM galeri_fasilitas WHERE gambar = ? UNION SELECT thumbnail AS path FROM artikels WHERE thumbnail = ? AND status = 'published' AND deleted_at IS NULL LIMIT 1", [assetPath, assetPath]);
           if (!allowed.length) return send(404, 'text/plain', 'Berkas tidak ditemukan.');
+        }
+      }
+      if (shared[1] === 'storage') {
+        const assetPath = decodeURIComponent(shared[2]);
+        const directory = assetPath.split('/')[0];
+        if (['thumbnail_artikel','galeri_fasilitas'].includes(directory)) {
+          const file = await readContentFile({ directory }, assetPath, contentRoot);
+          if (file && file.type.startsWith('image/')) return send(200, file.type, file.content);
         }
       }
       const root = new URL(shared[1] === 'storage' ? '../storage/uploads/' : shared[1] === 'pages' ? '../public/pages/' : '../assets/legacy-public/' + shared[1] + '/', import.meta.url);

@@ -1,3 +1,5 @@
+import { contentResources } from './content-resources.js';
+import { contentRoot, saveContentFile, readContentFile, removeNewContentFile } from './content-files.js';
 import ExcelJS from 'exceljs';
 import sanitize from 'sanitize-html';
 import { importMaster, importHeaders } from './master-imports.js';
@@ -14,6 +16,7 @@ const status = options => text('status', 'Status', { options });
 // Only resources and actions present in the active Laravel resources are enabled here.
 export const calendarColors = { merah: '#ff0000', biru: '#083e6b', hijau: '#28a745', ungu: '#6f42c1', kuning: '#ffc107', oranye: '#fd7e14', pink: '#e83e8c', coklat: '#8b4513', teal: '#20c997', abu: '#6c757d', hitam: '#000000', putih: '#ffffff' };
 export const masterResources = {
+ ...contentResources,
  'program-pendidikan': { title: 'Program Pendidikan', table: 'program_pendidikans', permission: 'program::pendidikan',
   fields: [text('nama_program', 'Nama Program'), ...['deskripsi', 'list_target', 'target_hafalan'].map(key => text(key, key.replaceAll('_', ' '), { type: 'rich', max: 65535, required: key !== 'target_hafalan' })), ...['link_pendaftaran', 'biaya_pendaftaran', 'biaya_daftar_ulang', 'biaya_tahunan', 'biaya_spp'].map(key => text(key, key.replaceAll('_', ' '), { required: false })), text('deskripsi_biaya', 'Deskripsi Biaya', { required: false, type: 'textarea', max: 65535 })],
   search: ['nama_program', 'link_pendaftaran', 'biaya_pendaftaran', 'biaya_daftar_ulang', 'biaya_tahunan', 'biaya_spp'], sorts: ['created_at', 'updated_at'], related: [['kelas', 'id_program_pendidikan'], ['penerimaan_santris', 'program_pendidikan_id']] },
@@ -38,7 +41,7 @@ export const masterResources = {
 };
 
 export function masterRoute(path) {
- const match = path.match(/^\/dashboard\/([a-z-]+)(?:\/(create|delete|import|template)|\/([1-9]\d{0,14})\/(edit|view|delete))?$/);
+ const match = path.match(/^\/dashboard\/([a-z-]+)(?:\/(create|delete|import|template)|\/([1-9]\d{0,14})\/(edit|view|delete|file|download))?$/);
  if (!match || !Object.hasOwn(masterResources, match[1])) return null;
  return { resource: match[1], action: match[3] ? match[4] : match[2] === 'delete' ? 'bulkDelete' : match[2] || 'list', id: match[3] };
 }
@@ -48,11 +51,12 @@ const stamp = value => value == null ? '—' : String(value);
 
 function form(config, base, row, action, csrf, errors = [], input = row) {
  const fields = config.statusOnly && action === 'edit' ? config.fields.filter(f => f.key === 'status') : config.fields;
- return { status: errors.length ? 422 : 200, title: `${action === 'create' ? 'Tambah' : 'Edit'} ${config.title}`, body: `<section class="status-note-form"><form method="post" action="${base}/${action === 'create' ? 'create' : `${row.id}/edit`}"><input type="hidden" name="_csrf" value="${esc(csrf)}">${errors.length ? `<div role="alert" class="message">${errors.map(e => `<p>${esc(e)}</p>`).join('')}</div>` : ''}${config.statusOnly && action === 'edit' ? `<p>${esc(row.nama)}</p>` : ''}${fields.map(f => {
+ return { status: errors.length ? 422 : 200, title: `${action === 'create' ? 'Tambah' : 'Edit'} ${config.title}`, body: `<section class="status-note-form"><form method="post" ${config.fields.some(f => f.type === 'file') ? 'enctype="multipart/form-data"' : ''} action="${base}/${action === 'create' ? 'create' : `${row.id}/edit`}"><input type="hidden" name="_csrf" value="${esc(csrf)}">${errors.length ? `<div role="alert" class="message">${errors.map(e => `<p>${esc(e)}</p>`).join('')}</div>` : ''}${config.statusOnly && action === 'edit' ? `<p>${esc(row.nama)}</p>` : ''}${fields.map(f => {
   const raw = input[f.key] ?? f.default ?? (f.options ? f.options[0] : '');
   const value = f.type === 'rich' ? sanitize(String(raw), richOptions) : String(raw);
+  if (f.type === 'file') return `<label class="field"><span class="field-label">${esc(f.label)} (maksimal 10 MB)</span>${row[f.key] ? `<a href="${base}/${row.id}/file">Berkas saat ini</a>` : ''}<input type="file" name="upload" ${f.image ? 'accept="image/jpeg,image/png,image/webp,image/gif"' : 'accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar"'} ${action === 'create' && f.required ? 'required' : ''}></label>`;
   const attrs = `name="${f.key}" ${f.required ? 'required' : ''}`;
-  const control = f.type === 'rich' ? `<textarea ${attrs} data-rich-editor rows="8" maxlength="${f.max}">${esc(value)}</textarea>` : f.options ? `<select ${attrs}>${f.options.map(v => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(optionLabel(f, v))}</option>`).join('')}</select>` : f.type === 'textarea' ? `<textarea ${attrs} rows="4" maxlength="${f.max}">${esc(value)}</textarea>` : `<input ${attrs} type="${f.type || 'text'}" ${f.type === 'number' ? `min="${f.min}" max="${f.max}" step="1"` : `maxlength="${f.max}"`} value="${esc(value)}">`;
+  const control = f.type === 'rich' ? `<textarea ${attrs} data-rich-editor rows="8" maxlength="${f.max}">${esc(value)}</textarea>` : f.options ? `<select ${attrs}>${f.options.map(v => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(f.labels?.[v] ?? optionLabel(f, v))}</option>`).join('')}</select>` : f.type === 'textarea' ? `<textarea ${attrs} rows="4" maxlength="${f.max}">${esc(value)}</textarea>` : `<input ${attrs} type="${f.type || 'text'}" ${f.type === 'number' ? `min="${f.min}" max="${f.max}" step="1"` : `maxlength="${f.max}"`} value="${esc(value)}">`;
   return `<label class="field"><span class="field-label">${esc(f.label)}${f.required ? ' <span class="required">*</span>' : ''}</span><span class="input-wrap">${control}</span></label>`;
  }).join('')}<button type="submit">Simpan</button> <a href="${base}">Batal</a></form></section>` };
 }
@@ -60,6 +64,7 @@ function form(config, base, row, action, csrf, errors = [], input = row) {
 export function validateMaster(fields, data) {
  const values = {}, errors = [];
  for (const f of fields) {
+  if (f.type === 'file') continue;
   const value = String(data[f.key] ?? f.default ?? '').trim();
   if (f.required && !value) errors.push(`${f.label} wajib diisi.`);
   if (f.type === 'number') {
@@ -67,7 +72,7 @@ export function validateMaster(fields, data) {
    values[f.key] = value ? Number(value) : null;
   } else {
    if (f.options && !f.options.includes(value)) errors.push(`${f.label} tidak valid.`);
-   if (!f.options && (Array.from(value).length > f.max || (f.type === 'textarea' && Buffer.byteLength(value) > f.max))) errors.push(`${f.label} terlalu panjang.`);
+   if (!f.options && (Array.from(value).length > f.max || (['textarea', 'rich'].includes(f.type) && Buffer.byteLength(value) > f.max))) errors.push(`${f.label} terlalu panjang.`);
    if (f.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number(value.slice(0,4)) < 1000 || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value)) errors.push(`${f.label} tidak valid.`);
    const clean = f.type === 'rich' ? sanitize(value, richOptions) : value;
    if (f.type === 'rich' && f.required && !sanitize(clean, { allowedTags: [], allowedAttributes: {} }).trim()) errors.push(`${f.label} wajib diisi.`);
@@ -78,44 +83,71 @@ export function validateMaster(fields, data) {
  return { values, errors };
 }
 
-export function createDashboardMasters(db = pool) {
- return async function masters({ resource, access, action = 'list', id, params = new URLSearchParams(), csrf = '', data }) {
-  const config = masterResources[resource];
+export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
+ return async function masters({ resource, access, action = 'list', id, params = new URLSearchParams(), csrf = '', data, user }) {
+  let config = masterResources[resource];
   if (!config) return { status: 404, title: 'Tidak ditemukan', body: '' };
   const base = `/dashboard/${resource}`;
   const message = (status, value) => ({ status, title: config.title, body: `<section><p>${esc(value)}</p><a href="${base}">Kembali ke daftar</a></section>` });
-  const permission = { list: 'view_any', create: 'create', edit: 'update', view: 'view', delete: 'delete', bulkDelete: 'delete_any', import: 'create', template: 'create' }[action];
+  const permission = { list: 'view_any', create: 'create', edit: 'update', view: 'view', delete: 'delete', bulkDelete: 'delete_any', file: 'view_any', download: 'view_any', import: 'create', template: 'create' }[action];
   if (!permission || (action === 'view' && !config.view) || (action === 'delete' && !config.singleDelete)) return message(404, 'Halaman tidak ditemukan.');
   if (['import', 'template'].includes(action) && !config.importable) return message(404, 'Halaman tidak ditemukan.');
   if (!has(access, config, permission)) return message(403, 'Anda tidak memiliki izin untuk tindakan ini.');
-  if (['edit', 'view', 'delete'].includes(action) && !validId(id)) return message(404, 'Data tidak ditemukan.');
+  if (['edit', 'view', 'delete', 'file', 'download'].includes(action) && !validId(id)) return message(404, 'Data tidak ditemukan.');
   if (action === 'import' && resource === 'nama-kota' && !has(access, config, 'update')) return message(403, 'Impor kota memerlukan izin tambah dan ubah.');
   if (action === 'template') {
    const workbook = new ExcelJS.Workbook(), sheet = workbook.addWorksheet('Template');
    sheet.addRow(importHeaders(resource));
    return { status: 200, xlsx: Buffer.from(await workbook.xlsx.writeBuffer()) };
   }
+  if (config.author && !validId(user?.id)) return message(403, 'Akun penulis tidak valid.');
   const c = await db.getConnection();
-  const active = config.softDelete ? 'deleted_at IS NULL' : '1=1';
+  const active = (config.softDelete ? 'deleted_at IS NULL' : '1=1') + (config.own ? ` AND penulis_id=${Number(user.id)}` : '');
+  let newFile;
+  let saved = false, transaction = false;
   try {
+   if (['create','edit'].includes(action) && data) { await c.beginTransaction(); transaction = true; }
+   config = { ...config, fields: await Promise.all(config.fields.map(async f => {
+    if (!f.relation) return f;
+    const [choices] = await c.execute(`SELECT id,\`${f.relation.column}\` AS label FROM ${f.relation.table} WHERE ${f.relation.active || '1=1'} ORDER BY \`${f.relation.column}\``);
+    return { ...f, options:choices.map(r => String(r.id)), labels:Object.fromEntries(choices.map(r => [String(r.id),r.label])) };
+   })) };
+   if (action === 'file' || action === 'download') {
+    const field = config.fields.find(f => f.type === 'file');
+    if (!field) return message(404, 'Berkas tidak ditemukan.');
+    const [rows] = await c.execute(`SELECT * FROM ${config.table} WHERE id=? AND ${active}`, [id]);
+    const file = rows[0] && await readContentFile(field,rows[0][field.key],uploadRoot);
+    const storedName = rows[0]?.[field.key]?.split('/').pop() || '';
+    const extension = storedName.includes('.') ? '.' + storedName.split('.').pop() : '';
+    const filename = resource === 'dokumen' ? String(rows[0]?.nama || 'dokumen') + (String(rows[0]?.nama).toLowerCase().endsWith(extension) ? '' : extension) : storedName;
+    return file ? { status:200, ...file, attachment: action === 'download', filename } : message(404, 'Berkas tidak ditemukan.');
+   }
    if (action === 'import') {
     if (!data) return message(405, 'Metode tidak tersedia.');
     return await importMaster({ c, resource, config, data, validate: validateMaster, colors: calendarColors, message });
    }
    if (action === 'list') {
     const query = tableQuery(params, { sorts: config.sorts, defaultSort: config.sorts[0] });
-    const definitions = config.fields.filter(f => f.options).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: optionLabel(f, value) })) }));
+    const definitions = config.fields.filter(f => f.options && !f.relation).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: optionLabel(f, value) })) }));
     const filters = tableFilters(params, definitions);
     if (!query || !filters) return message(422, 'Pencarian, filter, urutan, atau halaman tidak valid.');
     const where = [active, `(${config.search.map(key => `\`${key}\` LIKE ? ESCAPE '!'`).join(' OR ')})`];
     const args = config.search.map(() => query.pattern);
     for (const [key, value] of Object.entries(filters)) if (value) { where.push(`\`${key}\`=?`); args.push(value); }
     const [rows] = await c.execute(`SELECT *${config.count ? `,(SELECT COUNT(*) FROM ${config.count.table} WHERE ${config.count.key}=${config.table}.id) AS related_count` : ''},COUNT(*) OVER() AS table_total FROM ${config.table} WHERE ${where.join(' AND ')} ORDER BY \`${query.sort}\` ${query.direction.toUpperCase()},id LIMIT ${params.has('export') ? 10001 : query.limit} OFFSET ${params.has('export') ? 0 : query.offset}`, args);
-    const columns = config.fields.filter(f => !['textarea', 'rich'].includes(f.type)).map(f => ({ key: f.key, label: f.label, ...(f.options ? { value: row => optionLabel(f, String(row[f.key])) } : {}) }));
+    const columns = config.fields.filter(f => !['textarea', 'rich', 'file'].includes(f.type)).map(f => ({ key: f.key, label: f.label, ...(f.options ? { value: row => f.labels?.[String(row[f.key])] ?? optionLabel(f, String(row[f.key])) } : {}) }));
+    let authors = {};
+    if (config.author && rows.length) {
+     const ids = [...new Set(rows.map(row => row.penulis_id))];
+     const [people] = await c.execute(`SELECT id,name FROM users WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
+     authors = Object.fromEntries(people.map(person => [person.id,person.name]));
+    }
+    for (const key of config.extraColumns || []) columns.push({ key, label:{ penulis_id:'Penulis',views:'Views',like:'Like',share:'Share',status:'Status' }[key] || key, ...(key === 'penulis_id' ? { value:row => authors[row.penulis_id] || '—' } : {}) });
+    if (config.fields.some(f => f.type === 'file')) columns.push({ label:'Berkas', html: row => { const field = config.fields.find(f => f.type === 'file'); return row[field.key] ? `<a href="${base}/${row.id}/file">${field.image ? `<img src="${base}/${row.id}/file" width="120" height="68" alt="${esc(field.label)}" loading="lazy">` : 'Preview'}</a> · <a href="${base}/${row.id}/download">Unduh</a>` : '—'; } });
     if (config.count) columns.push({ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label });
     columns.push({ key: 'created_at', label: 'Dibuat', value: row => stamp(row.created_at) }, { key: 'updated_at', label: 'Diperbarui', value: row => stamp(row.updated_at) });
     if (config.softDelete) columns.push({ key: 'deleted_at', label: 'Dihapus', value: row => stamp(row.deleted_at) });
-    const exportColumns = [...config.fields.map(f => ({ key: f.key, label: f.label })), ...(config.count ? [{ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label }] : []), ...columns.filter(col => ['created_at', 'updated_at', 'deleted_at'].includes(col.key))];
+    const exportColumns = [...config.fields.map(f => ({ key: f.key, label: f.label })), ...(config.count ? [{ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label }] : []), ...columns.filter(col => [...(config.extraColumns || []),'created_at', 'updated_at', 'deleted_at'].includes(col.key))];
     const exported = await tableExport(params, rows, exportColumns, config.title);
     if (exported) return exported;
     if (has(access, config, 'update') || (config.view && has(access, config, 'view')) || (config.singleDelete && has(access, config, 'delete'))) columns.push({ label: 'Aksi', html: row => tableRowActions([
@@ -123,7 +155,7 @@ export function createDashboardMasters(db = pool) {
      ...(config.view && has(access, config, 'view') ? [{ label: 'Detail', href: `${base}/${row.id}/view` }] : []),
      ...(config.singleDelete && has(access, config, 'delete') ? [{ label: 'Hapus', href: `${base}/${row.id}/delete` }] : [])
     ]) });
-    return { status: 200, title: config.title, body: `<section>${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${resource !== 'nama-kota' || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key).label).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') ? { action: `${base}/delete`, csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Kategori dihapus secara lunak; artikel terkait tetap tersimpan.' : '' } : null })}</section>` };
+    return { status: 200, title: config.title, body: `<section>${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${resource !== 'nama-kota' || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key)?.label || key).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') ? { action: `${base}/delete`, csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Data dihapus secara lunak.' : '' } : null })}</section>` };
    }
    if (action === 'bulkDelete' || action === 'delete') {
     if (!data) {
@@ -150,15 +182,22 @@ export function createDashboardMasters(db = pool) {
    }
    let row = {};
    if (action !== 'create') {
-    const [rows] = await c.execute(`SELECT * FROM ${config.table} WHERE id=? AND ${active}`, [id]);
+    const [rows] = await c.execute(`SELECT * FROM ${config.table} WHERE id=? AND ${active}${transaction ? ' FOR UPDATE' : ''}`, [id]);
     if (!rows.length) return message(404, 'Data tidak ditemukan.');
     row = rows[0];
    }
-   if (action === 'view') return { status: 200, title: config.title, body: `<section><dl>${config.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(row[f.key])}</dd>`).join('')}</dl>${has(access, config, 'update') ? `<a href="${base}/${id}/edit">Edit</a> · ` : ''}<a href="${base}">Kembali ke daftar</a></section>` };
+   if (action === 'view') return { status: 200, title: config.title, body: `<section><dl>${config.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${f.type === 'rich' ? sanitize(String(row[f.key] || ''), richOptions) : f.type === 'file' && row[f.key] ? `<a href="${base}/${id}/file">Buka berkas</a>` : esc(f.labels?.[row[f.key]] ?? row[f.key])}</dd>`).join('')}</dl>${has(access, config, 'update') ? `<a href="${base}/${id}/edit">Edit</a> · ` : ''}<a href="${base}">Kembali ke daftar</a></section>` };
    if (!data) return form(config, base, row, action, csrf);
    const fields = config.statusOnly && action === 'edit' ? config.fields.filter(f => f.key === 'status') : config.fields;
    const { values, errors } = validateMaster(fields, data);
+   const fileField = fields.find(f => f.type === 'file');
+   if (fileField && fileField.required && !row[fileField.key] && !data.upload?.length) errors.push(`${fileField.label} wajib diisi.`);
    if (errors.length) return form(config, base, row, action, csrf, errors, data);
+   for (const f of fields.filter(f => f.relation)) {
+    const [related] = await c.execute(`SELECT id FROM ${f.relation.table} WHERE id=? AND ${f.relation.active || '1=1'} FOR SHARE`, [values[f.key]]);
+    if (!related.length) return form(config,base,row,action,csrf,[`${f.label} tidak tersedia. Muat ulang pilihan.`],data);
+   }
+   if (config.author && action === 'create') values.penulis_id = user.id;
    if (config.slug && (action === 'create' || (!config.statusOnly && values[config.slug] !== row[config.slug]))) {
     const original = Array.from(slugFor(values[config.slug])).slice(0, 240).join('');
     if (!original) return form(config, base, row, action, csrf, ['Nama harus menghasilkan slug yang valid.'], data);
@@ -173,6 +212,14 @@ export function createDashboardMasters(db = pool) {
     values.slug = slug;
    }
    try {
+    if (fileField && data.upload?.length) {
+     try { newFile = await saveContentFile(fileField,data,uploadRoot); values[fileField.key] = newFile; }
+     catch (error) { return form(config,base,row,action,csrf,[error.message],data); }
+    }
+    if (resource === 'dokumen') {
+     const path = values.path || row.path;
+     values.link_preview_public = '/preview/' + path; values.link_download = '/download/' + path;
+    }
     const keys = Object.keys(values);
     if (action === 'create') await c.execute(`INSERT INTO ${config.table} (${keys.map(k => `\`${k}\``).join(',')},created_at,updated_at) VALUES (${keys.map(() => '?').join(',')},NOW(),NOW())`, Object.values(values));
     else {
@@ -183,8 +230,10 @@ export function createDashboardMasters(db = pool) {
     if (error.code === 'ER_DUP_ENTRY') return form(config, base, row, action, csrf, ['Nama/slug sudah digunakan. Muat ulang dan coba kembali.'], data);
     throw error;
    }
+   if (transaction) { await c.commit(); transaction = false; }
+   saved = true;
    return { status: 303 };
-  } finally { c.release(); }
+  } finally { if (transaction) await c.rollback(); if (newFile && !saved) await removeNewContentFile(newFile,uploadRoot); c.release(); }
  };
 }
 export const dashboardMasters = createDashboardMasters();

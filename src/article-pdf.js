@@ -1,3 +1,4 @@
+import { contentRoot, readContentFile } from './content-files.js';
 import puppeteer from 'puppeteer-core';
 import {readFile,realpath,stat} from 'node:fs/promises';
 import {resolve,sep,extname} from 'node:path';
@@ -18,6 +19,10 @@ const fonts=()=>fontCache??=Promise.all([
 async function embeddedImage(path){
  try{
   if(!path||path.includes('\0'))return null;
+  if(path.startsWith('thumbnail_artikel/')) {
+   const file=await readContentFile({directory:'thumbnail_artikel'},path,contentRoot);
+   if(file && file.type.startsWith('image/'))return `data:${file.type};base64,${file.content.toString('base64')}`;
+  }
   const root=await realpath(uploads);const target=await realpath(resolve(root,path));
   if(!target.startsWith(root+sep)||(await stat(target)).size>15*1024*1024)return null;
   const mime={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif'}[extname(target).toLowerCase()];if(!mime)return null;

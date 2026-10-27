@@ -31,7 +31,7 @@ async function setup(c, config) {
  for (const [table, key] of config.related || []) await c.query(`CREATE TEMPORARY TABLE ${table} (id BIGINT PRIMARY KEY,${key} BIGINT)`);
 }
 const hash = value => createHash('sha256').update(value).digest('hex');
-for (const [resource, config] of Object.entries(masterResources)) test(`${resource}: SQL/HTTP CRUD, permission, filter, ekspor, isolasi dan relasi`, async t => {
+for (const [resource, config] of Object.entries(masterResources).filter(([key]) => !['artikel','artikel-saya','fasilitas','galeri-fasilitas','dokumen'].includes(key))) test(`${resource}: SQL/HTTP CRUD, permission, filter, ekspor, isolasi dan relasi`, async t => {
  const c = await pool.getConnection();
  let server;
  try {

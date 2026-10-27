@@ -1,4 +1,4 @@
-import { dashboardMasters, masterRoute } from './dashboard-masters.js';
+import { masterResources, dashboardMasters, masterRoute } from './dashboard-masters.js';
 import { candidates } from './candidates.js';
 import { admissionsAdmin } from './admissions-admin.js';
 import { referralSources } from './referral-sources.js';
@@ -31,8 +31,8 @@ export async function verifyPassword(value,encoded) {
 }
 const dummyHash=bcrypt.hashSync('nonexistent-account-dummy-password',12);
 class FormError extends Error { constructor(message,status=422){super(message);this.status=status;} }
-async function readForm(req, maxEncodedSize=16384, fileField='avatar') {
-  const max=1100000;let size=0;const chunks=[];
+async function readForm(req, maxEncodedSize=16384, fileField='avatar', contentUpload=false, masterForm=false) {
+  const max=contentUpload?11534336:1100000;let size=0;const chunks=[];
   for await(const chunk of req){size+=chunk.length;if(size>max)throw new FormError('Data terlalu besar.',413);chunks.push(chunk);}
   const buffer=Buffer.concat(chunks);
   if(req.headers['content-type']?.startsWith('application/x-www-form-urlencoded')) {
@@ -43,13 +43,13 @@ async function readForm(req, maxEncodedSize=16384, fileField='avatar') {
   }
   if(req.headers['content-type']?.startsWith('multipart/form-data')) {
     return new Promise((resolve,reject)=>{
-      let parser;try{parser=Busboy({headers:req.headers,limits:{files:1,fileSize:1048576,fields:2,fieldSize:256,parts:3}});}catch{return reject(new FormError('Formulir tidak valid.',400));}
+      let parser;try{parser=Busboy({headers:req.headers,limits:{files:1,fileSize:contentUpload?10485760:1048576,fields:masterForm?20:2,fieldSize:masterForm?1000000:256,parts:masterForm?21:3}});}catch{return reject(new FormError('Formulir tidak valid.',400));}
       const data={};let invalid=false;
       parser.on('field',(name,value,info)=>{if(name in data||info.valueTruncated)invalid=true;data[name]=value;});
-      parser.on('file',(name,file)=>{const parts=[];if(name!==fileField)invalid=true;file.on('limit',()=>invalid=true);file.on('data',chunk=>parts.push(chunk));file.on('end',()=>{data[fileField]=Buffer.concat(parts);});});
+      parser.on('file',(name,file,info)=>{const parts=[];if(contentUpload)data.upload_name=info.filename;if(name!==fileField)invalid=true;file.on('limit',()=>invalid=true);file.on('data',chunk=>parts.push(chunk));file.on('end',()=>{data[fileField]=Buffer.concat(parts);});});
       for(const event of ['filesLimit','fieldsLimit','partsLimit'])parser.on(event,()=>invalid=true);
       parser.on('error',()=>reject(new FormError('Formulir tidak valid.',400)));
-      parser.on('close',()=>invalid?reject(new FormError('Berkas maksimal 1 MB dan satu berkas.')):resolve(data));parser.end(buffer);
+      parser.on('close',()=>invalid?reject(new FormError('Berkas terlalu besar atau formulir tidak valid.')):resolve(data));parser.end(buffer);
     });
   }
   throw new FormError('Format formulir tidak didukung.',415);
@@ -73,7 +73,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
       s.expires_at=now()+duration(s);await store.putSession(s);if(previous)await store.deleteSession(previous.id);setCookie(raw);
     };
     const page=async(view,message='',status=200,details={})=>send(status,authPage(view,s,user,access,message,status,details));
-    const moduleResult=(result,filename)=>{if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}if(result.zip!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.zip"`);return send(200,result.zip,'application/zip');}return page(path,'',result.status,{module:result});};
+    const moduleResult=(result,filename)=>{if(result.content!==undefined){res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"sandbox; default-src 'none'");res.setHeader('Content-Disposition',`${result.attachment?'attachment':'inline'}; filename="${String(result.filename).replace(/[^a-zA-Z0-9._-]/g,'_')}"; filename*=UTF-8''${encodeURIComponent(result.filename)}`);return send(result.status,result.content,result.type);}if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}if(result.zip!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.zip"`);return send(200,result.zip,'application/zip');}return page(path,'',result.status,{module:result});};
     try {
       if(!['GET','HEAD','POST'].includes(req.method))return send(405,'Metode tidak tersedia.','text/plain');
       if(cookie&&/^[a-f0-9]{64}$/.test(cookie))s=await store.session(hash(cookie));
@@ -96,7 +96,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
           const image=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize(512,512,{fit:'inside',withoutEnlargement:true}).webp().toBuffer();return send(200,image,'image/webp');
         }
         const masterPage=masterRoute(path);
-        if(masterPage){const result=await masters({...masterPage,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,masterPage.resource);}
+        if(masterPage){const result=await masters({...masterPage,user,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,masterPage.resource);}
         const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
         if(candidateFile){const result=await files({user,access,id:candidateFile[1],field:candidateFile[2],scope:'candidate'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
         const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete|zip))?$/);
@@ -126,7 +126,8 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(path==='/dashboard/password-reset/reset'){const params=new URL(req.url,'http://localhost').searchParams;return page(path,'',200,{email:params.get('email'),token:params.get('token')});}
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
       }
-      const data=await readForm(req,masterRoute(path)?1000000:16384,masterRoute(path)?.action==='import'?'workbook':'avatar');formData=data;
+      const route=masterRoute(path), contentUpload=!!route && masterResources[route.resource].fields.some(f=>f.type==='file');
+      const data=await readForm(req,route?1000000:16384,route?.action==='import'?'workbook':contentUpload?'upload':'avatar',contentUpload,!!route);formData=data;
       if(!equal(data._csrf,s.csrf))throw new FormError('Sesi formulir kedaluwarsa. Muat ulang halaman dan coba lagi.',403);
       const origin=req.headers.origin;
       const allowedOrigin=process.env.NODE_AUTH_PUBLIC_URL ? new URL(process.env.NODE_AUTH_PUBLIC_URL).origin : `${secure?'https':'http'}://${req.headers.host}`;
@@ -159,7 +160,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         return redirect('/dashboard/login');
       }
       const masterAction=masterRoute(path);
-      if(masterAction){if(['list','view','template'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
+      if(masterAction){if(['list','view','template','file','download'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
       if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
       const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
       if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
