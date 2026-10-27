@@ -31,7 +31,7 @@ export async function verifyPassword(value,encoded) {
 }
 const dummyHash=bcrypt.hashSync('nonexistent-account-dummy-password',12);
 class FormError extends Error { constructor(message,status=422){super(message);this.status=status;} }
-async function readForm(req, maxEncodedSize=16384) {
+async function readForm(req, maxEncodedSize=16384, fileField='avatar') {
   const max=1100000;let size=0;const chunks=[];
   for await(const chunk of req){size+=chunk.length;if(size>max)throw new FormError('Data terlalu besar.',413);chunks.push(chunk);}
   const buffer=Buffer.concat(chunks);
@@ -46,10 +46,10 @@ async function readForm(req, maxEncodedSize=16384) {
       let parser;try{parser=Busboy({headers:req.headers,limits:{files:1,fileSize:1048576,fields:2,fieldSize:256,parts:3}});}catch{return reject(new FormError('Formulir tidak valid.',400));}
       const data={};let invalid=false;
       parser.on('field',(name,value,info)=>{if(name in data||info.valueTruncated)invalid=true;data[name]=value;});
-      parser.on('file',(name,file)=>{const parts=[];if(name!=='avatar')invalid=true;file.on('limit',()=>invalid=true);file.on('data',chunk=>parts.push(chunk));file.on('end',()=>{data.avatar=Buffer.concat(parts);});});
+      parser.on('file',(name,file)=>{const parts=[];if(name!==fileField)invalid=true;file.on('limit',()=>invalid=true);file.on('data',chunk=>parts.push(chunk));file.on('end',()=>{data[fileField]=Buffer.concat(parts);});});
       for(const event of ['filesLimit','fieldsLimit','partsLimit'])parser.on(event,()=>invalid=true);
       parser.on('error',()=>reject(new FormError('Formulir tidak valid.',400)));
-      parser.on('close',()=>invalid?reject(new FormError('Foto maksimal 1 MB dan satu berkas.')):resolve(data));parser.end(buffer);
+      parser.on('close',()=>invalid?reject(new FormError('Berkas maksimal 1 MB dan satu berkas.')):resolve(data));parser.end(buffer);
     });
   }
   throw new FormError('Format formulir tidak didukung.',415);
@@ -126,7 +126,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(path==='/dashboard/password-reset/reset'){const params=new URL(req.url,'http://localhost').searchParams;return page(path,'',200,{email:params.get('email'),token:params.get('token')});}
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
       }
-      const data=await readForm(req,masterRoute(path)?250000:16384);formData=data;
+      const data=await readForm(req,masterRoute(path)?1000000:16384,masterRoute(path)?.action==='import'?'workbook':'avatar');formData=data;
       if(!equal(data._csrf,s.csrf))throw new FormError('Sesi formulir kedaluwarsa. Muat ulang halaman dan coba lagi.',403);
       const origin=req.headers.origin;
       const allowedOrigin=process.env.NODE_AUTH_PUBLIC_URL ? new URL(process.env.NODE_AUTH_PUBLIC_URL).origin : `${secure?'https':'http'}://${req.headers.host}`;
@@ -159,7 +159,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         return redirect('/dashboard/login');
       }
       const masterAction=masterRoute(path);
-      if(masterAction){if(['list','view'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
+      if(masterAction){if(['list','view','template'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):page(path,'',result.status,{module:result});}
       if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
       const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
       if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}

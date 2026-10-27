@@ -1,10 +1,14 @@
 import { createServer } from 'node:http';
-import { readFile, readdir, mkdir } from 'node:fs/promises';
+import { readFile, readdir, mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer-core';
 import sharp from 'sharp';
+import ExcelJS from 'exceljs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { importHeaders } from '../src/master-imports.js';
 import { pool } from '../src/db.js';
 import { server as assets } from '../src/server.js';
 import { createAuthHandler } from '../src/auth.js';
@@ -19,8 +23,8 @@ try {
   const source = await readFile(new URL(filename, migrations), 'utf8');
   await c.query(source.match(/CREATE TABLE[\s\S]*?ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/)[0].replace('CREATE TABLE', 'CREATE TEMPORARY TABLE'));
   createdTables.push(config.table);
-  const fields = config.fields.map(f => f.key), sample = Object.fromEntries(config.fields.map(f => [f.key, f.options ? f.options[0] : f.type === 'number' ? 1 : 'Contoh ' + f.label]));
-  for (let n = 1; n <= 12; n++) await c.execute(`INSERT INTO ${config.table} (${fields.map(f => '`' + f + '`')}${config.slug ? ',slug' : ''},created_at,updated_at) VALUES (${fields.map(() => '?')}${config.slug ? ',?' : ''},NOW(),NOW())`, [...fields.map(f => sample[f]), ...(config.slug ? ['contoh-' + n] : [])]);
+  const fields = config.fields.map(f => f.key), sample = Object.fromEntries(config.fields.map(f => [f.key, f.options ? f.options[0] : f.type === 'number' ? 1 : f.type === 'date' ? '2026-10-27' : 'Contoh ' + f.label]));
+  for (let n = 1; n <= 12; n++) await c.execute(`INSERT INTO ${config.table} (${fields.map(f => '`' + f + '`')}${config.slug ? ',slug' : ''},created_at,updated_at) VALUES (${fields.map(() => '?')}${config.slug ? ',?' : ''},NOW(),NOW())`, [...fields.map(f => f === 'nama_tema' ? sample[f] + n : sample[f]), ...(config.slug ? ['contoh-' + n] : [])]);
   for (const [table, key] of config.related || []) { await c.query(`CREATE TEMPORARY TABLE ${table} (id BIGINT PRIMARY KEY,${key} BIGINT)`); createdTables.push(table); }
  }
  const masters = createDashboardMasters({ getConnection: async () => ({ execute: (...args) => c.execute(...args), beginTransaction: () => c.beginTransaction(), commit: () => c.commit(), rollback: () => c.rollback(), release() {} }) });
@@ -38,9 +42,10 @@ try {
  await page.setCookie({ name: 'alyusro_node_session', value: raw, url: base });
  const output = new URL('../storage/auth-preview/', import.meta.url); await mkdir(output, { recursive: true });
  const visit = async path => { const response = await page.goto(base + path, { waitUntil: 'networkidle0' }); assert.equal(response.status(), 200, path); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, path); };
- for (const theme of ['light', 'dark']) for (const width of [1440, 390]) {
-  await page.setViewport({ width, height: 900 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
+ for (const theme of process.env.MASTER_UI_ACTIONS_ONLY ? [] : ['light', 'dark']) for (const width of [1440, 390]) {
+  await page.setViewport({ width, height: 900 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
   for (const [resource, config] of Object.entries(masterResources)) {
+   if (process.env.MASTER_UI_RESOURCES && !process.env.MASTER_UI_RESOURCES.split(',').includes(resource)) continue;
    const path = '/dashboard/' + resource;
    await visit(path + '?per_page=10');
    assert.equal(await page.$eval('html', e => e.dataset.theme), theme);
@@ -64,13 +69,14 @@ try {
    assert.equal((await page.$$('[data-table-select-row]')).length, 2);
    await visit(path + '?sort=' + config.sorts[0] + '&direction=desc');
    assert.equal(await page.$eval('th[aria-sort]', e => e.getAttribute('aria-sort')), 'descending');
-   if (config.fields.some(f => f.options)) { await visit(path + '?status=' + encodeURIComponent(config.fields.find(f => f.options).options[1])); assert.ok(await page.$('.data-table-empty')); }
+   if (config.fields.some(f => f.options)) { await visit(path + '?' + config.fields.find(f => f.options).key + '=' + encodeURIComponent(config.fields.find(f => f.options).options[1])); assert.ok(await page.$('.data-table-empty')); }
    await visit(path + '?q=tidak-ditemukan'); assert.ok(await page.$('.data-table-empty'));
    await visit(path + '/create'); assert.equal((await page.$$('form input[required],form select[required]')).length > 0, true);
    await visit(path + '/1/edit');
    const firstKey = config.statusOnly ? 'status' : config.fields[0].key;
    assert.ok(await page.$(`[name="${firstKey}"]`));
-   if (config.view) { await visit(path + '/1/view'); assert.equal((await page.$$('dl dt')).length, config.fields.length); await visit(path + '/1/delete'); assert.ok(await page.$('[name=confirm]')); }
+   if (config.singleDelete) { await visit(path + '/1/delete'); assert.ok(await page.$('[name=confirm]')); }
+   if (config.view) { await visit(path + '/1/view'); assert.equal((await page.$$('dl dt')).length, config.fields.length);  }
   }
  }
  assert.deepEqual(errors, []);
@@ -84,9 +90,52 @@ try {
  page.once('dialog', dialog => dialog.accept());
  await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.data-table-delete')]);
  await visit('/dashboard/struktur-mahad?q=Uji+Browser'); assert.ok(await page.$('.data-table-empty'));
+ // Submit every newly migrated resource through the browser, then verify persisted values.
+ for (const resource of ['program-pendidikan', 'kalender-akademik', 'prestasi', 'nama-kota', 'tema-soal']) {
+  const config = masterResources[resource], path = '/dashboard/' + resource;
+  const input = Object.fromEntries(config.fields.map(f => [f.key, f.options ? f.options[0] : f.type === 'date' ? '2026-10-27' : f.type === 'number' ? '2026' : 'Browser ' + f.label]));
+  await visit(path + '/create');
+  for (const f of config.fields) {
+   if (f.type === 'rich') { const editor = await page.$(`[name="${f.key}"]`); await editor.evaluate((node, value) => { const content = node.previousElementSibling.querySelector('[contenteditable]'); content.textContent = value; content.dispatchEvent(new Event('input', { bubbles: true })); }, input[f.key]); }
+   else if (f.options) await page.select(`[name="${f.key}"]`, input[f.key]);
+   else await page.$eval(`[name="${f.key}"]`, (node, value) => { node.value = value; }, input[f.key]);
+  }
+  if (resource === 'program-pendidikan') {
+   await page.focus('.master-rich-content'); await page.keyboard.down('Control'); await page.keyboard.press('a'); await page.keyboard.up('Control');
+   await page.click('.master-rich-toolbar button');
+  }
+  for (const [width, theme] of [[1440, 'light'], [390, 'dark']]) {
+   await page.setViewport({ width, height: 900 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
+   await page.waitForFunction(() => innerWidth > 1023 || document.querySelector('.sidebar').getBoundingClientRect().right <= 1);
+   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+   await page.screenshot({ path: fileURLToPath(new URL(`master-form-${resource}-${theme}-${width}.png`, output)), fullPage: true });
+  }
+  await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.status-note-form button[type=submit]')]);
+  assert.equal(new URL(page.url()).pathname, path);
+  const [[stored]] = await c.query(`SELECT * FROM ${config.table} ORDER BY id DESC LIMIT 1`);
+  assert.equal(stored[config.fields[0].key], input[config.fields[0].key]);
+  if (resource === 'program-pendidikan') assert.match(stored.deskripsi, /<(b|strong)>/);
+  await visit(path + '/' + stored.id + '/edit');
+  const field = config.fields.find(f => f.type !== 'date' && !f.options && f.type !== 'rich' && f.type !== 'number');
+  await page.$eval(`[name="${field.key}"]`, node => { node.value = 'Browser diperbarui'; });
+  await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.status-note-form button[type=submit]')]);
+  const [[edited]] = await c.execute(`SELECT * FROM ${config.table} WHERE id=?`, [stored.id]); assert.equal(edited[field.key], 'Browser diperbarui');
+  if (config.importable) {
+   const folder = await mkdtemp(join(tmpdir(), 'alyusro-import-'));
+   try {
+    const book = new ExcelJS.Workbook(), sheet = book.addWorksheet('Import'); sheet.addRow(importHeaders(resource));
+    sheet.addRow(resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Browser impor kegiatan', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['Browser impor kota', 'مدينة'] : ['Browser impor prestasi', 1, 'Lomba', 'Nasional', 'Mahad', 2026]);
+    const filename = join(folder, 'uji.xlsx'); await writeFile(filename, Buffer.from(await book.xlsx.writeBuffer()));
+    await visit(path); await (await page.$('[name=workbook]')).uploadFile(filename);
+    await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.click('.master-import button[type=submit]')]);
+    const [[last]] = await c.query(`SELECT * FROM ${config.table} ORDER BY id DESC LIMIT 1`); assert.match(last[resource === 'kalender-akademik' ? 'kegiatan' : config.fields[0].key], /[Bb]rowser impor/);
+   } finally { await rm(folder, { recursive: true, force: true }); }
+  }
+ }
  const thumbs = await Promise.all(captures.map(async ({ capture }) => sharp(capture).resize({ width: 360, height: 300, fit: 'contain', background: '#ddd' }).png().toBuffer()));
- await sharp({ create: { width: 1800, height: 1200, channels: 3, background: '#ddd' } }).composite(thumbs.map((input, i) => ({ input, left: (i % 5) * 360, top: Math.floor(i / 5) * 300 }))).png().toFile(fileURLToPath(new URL('masters-contact-sheet.png', output)));
- console.log('5 modul: desktop/HP, terang/gelap, data berisi/kosong, kolom tersimpan, keyboard, pagination, sort/filter, formulir/detail dan tambah/hapus browser lulus.');
+ if (captures.length) await sharp({ create: { width: 1800, height: Math.ceil(captures.length / 5) * 300, channels: 3, background: '#ddd' } }).composite(thumbs.map((input, i) => ({ input, left: (i % 5) * 360, top: Math.floor(i / 5) * 300 }))).png().toFile(fileURLToPath(new URL('masters-contact-sheet.png', output)));
+ if (!process.env.MASTER_UI_ACTIONS_ONLY) console.log('Master terpilih: desktop/HP, terang/gelap, data berisi/kosong, kolom tersimpan, keyboard, pagination, sort/filter, formulir/detail lulus.');
+ console.log('Lima modul baru: tambah/edit, format rich text, impor workbook melalui browser dan screenshot formulir desktop/HP lulus.');
 } finally {
  if (browser) await browser.close();
  if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

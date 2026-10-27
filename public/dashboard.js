@@ -43,3 +43,21 @@ for(const table of document.querySelectorAll('[data-table]')){
  }
 }
 for(const select of document.querySelectorAll('[data-table-page-size]'))select.addEventListener('change',()=>{location.href=select.value;});
+
+// Rich-text fields keep their textarea as a no-JavaScript fallback.
+for (const source of document.querySelectorAll('[data-rich-editor]')) {
+ const wrapper = document.createElement('div'); wrapper.className = 'master-rich';
+ const toolbar = document.createElement('div'); toolbar.className = 'master-rich-toolbar'; toolbar.setAttribute('role', 'toolbar'); toolbar.setAttribute('aria-label', 'Format teks');
+ const editor = document.createElement('div'); editor.contentEditable = 'true'; editor.className = 'master-rich-content'; editor.setAttribute('role', 'textbox'); editor.setAttribute('aria-multiline', 'true'); editor.setAttribute('aria-label', source.name.replaceAll('_', ' '));
+ // Server sanitizes the stored HTML before returning this value.
+ editor.innerHTML = source.value;
+ for (const [command, label] of [['bold', 'Tebal'], ['italic', 'Miring'], ['underline', 'Garis bawah'], ['insertUnorderedList', 'Daftar'], ['insertOrderedList', 'Nomor'], ['undo', 'Urungkan'], ['redo', 'Ulangi']]) {
+  const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
+  button.addEventListener('click', () => { editor.focus(); document.execCommand(command); sync(); }); toolbar.append(button);
+ }
+ function sync() { source.value = editor.innerHTML; }
+ editor.addEventListener('input', sync);
+ editor.addEventListener('paste', event => { event.preventDefault(); document.execCommand('insertText', false, event.clipboardData.getData('text/plain')); sync(); });
+ source.before(wrapper); wrapper.append(toolbar, editor); source.hidden = true; source.required = false;
+ source.form.addEventListener('submit', sync);
+}

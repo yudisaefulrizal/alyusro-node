@@ -9,6 +9,11 @@ import { createAuthHandler } from '../src/auth.js';
 import { masterResources, masterRoute, createDashboardMasters } from '../src/dashboard-masters.js';
 
 const sample = {
+ 'program-pendidikan': { nama_program: '100% <Uji>', deskripsi: '<p>Deskripsi <strong>program</strong></p><script>alert(1)</script>', list_target: '<ul><li>Target</li></ul>', biaya_spp: '100000' },
+ 'kalender-akademik': { tanggal: '2026-10-27', tanggal_selesai: '2026-10-28', kegiatan: '100% <Uji>', keterangan: 'Uji', warna: '#083e6b' },
+ prestasi: { nama: '100% <Uji>', peringkat: '1', nama_lomba: 'Lomba', tingkat: 'Nasional', penyelenggara: 'Mahad', tahun: '2026' },
+ 'nama-kota': { nama_latin: '100% <Uji>', nama_arab: 'مدينة', status: '0' },
+ 'tema-soal': { nama_tema: '100% <Uji>' },
  'kategori-artikel': { nama: '100% <Uji>', status: 'aktif' },
  'kategori-fasilitas': { nama_kategori: '100% <Uji>', deskripsi_kategori: '<script>uji</script>' },
  'struktur-mahad': { struktur: '100% <Uji>', nama: '<img src=x onerror=alert(1)>', level: '2' },
@@ -34,10 +39,10 @@ for (const [resource, config] of Object.entries(masterResources)) test(`${resour
   const masters = createDashboardMasters({ getConnection: async () => ({ execute: (...args) => c.execute(...args), beginTransaction: () => c.beginTransaction(), commit: () => c.commit(), rollback: () => c.rollback(), release() {} }) });
   const access = { roles: ['Penguji'], permissions: ['view_any', 'view', 'create', 'update', 'delete', 'delete_any'].map(p => p + '_' + config.permission) };
   const call = (action, extra = {}) => masters({ resource, access, action, csrf: 'csrf', ...extra });
-  for (const action of ['list', 'create', 'edit', 'bulkDelete', ...(config.view ? ['view', 'delete'] : [])]) assert.equal((await call(action, { id: '1', access: { permissions: [] } })).status, 403);
+  for (const action of ['list', 'create', 'edit', 'bulkDelete', ...(config.view ? ['view'] : []), ...(config.singleDelete ? ['delete'] : [])]) assert.equal((await call(action, { id: '1', access: { permissions: [] } })).status, 403);
   assert.equal((await call('create', { data: {} })).status, 422);
   assert.equal((await call('create', { data: sample[resource] })).status, 303);
-  assert.equal((await call('create', { data: sample[resource] })).status, 303);
+  assert.equal((await call('create', { data: resource === 'tema-soal' ? { nama_tema: '100% <Uji> dua' } : sample[resource] })).status, 303);
   const [[row]] = await c.query(`SELECT * FROM ${config.table} WHERE id=1`);
   if (config.slug) {
    const [slugs] = await c.query(`SELECT slug FROM ${config.table} ORDER BY id`);
@@ -54,25 +59,32 @@ for (const [resource, config] of Object.entries(masterResources)) test(`${resour
   const readOnly = await call('list', { access: { permissions: ['view_any_' + config.permission] } });
   assert.doesNotMatch(readOnly.body, /data-table-bulk|\/create|\/1\/edit/);
   if (config.fields.some(f => f.options)) {
-   assert.equal((await call('list', { params: new URLSearchParams('status=bogus') })).status, 422);
-   assert.match((await call('list', { params: new URLSearchParams('status=aktif') })).body, /100% &lt;Uji&gt;/);
-   const filtered = await call('list', { params: new URLSearchParams({ status: config.fields.find(f => f.options).options[1], export: 'xlsx' }) });
+   assert.equal((await call('list', { params: new URLSearchParams({ [config.fields.find(f => f.options).key]: 'bogus' }) })).status, 422);
+   assert.match((await call('list', { params: new URLSearchParams({ [config.fields.find(f => f.options).key]: String(sample[resource][config.fields.find(f => f.options).key]) }) })).body, /100% &lt;Uji&gt;/);
+   const filtered = await call('list', { params: new URLSearchParams({ [config.fields.find(f => f.options).key]: config.fields.find(f => f.options).options.find(v => v !== sample[resource][config.fields.find(f => f.options).key]), export: 'xlsx' }) });
    const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(filtered.xlsx); assert.equal(workbook.worksheets[0].rowCount, 1);
   }
   const exported = await call('list', { params: new URLSearchParams('q=%25&export=xlsx&direction=desc') });
   const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(exported.xlsx);
-  assert.equal(workbook.worksheets[0].rowCount, 3); assert.equal(workbook.worksheets[0].getCell('A2').value, sample[resource][config.fields[0].key]);
+  assert.equal(workbook.worksheets[0].rowCount, 3); assert.equal(workbook.worksheets[0].getCell('A2').value, resource === 'tema-soal' ? '100% <Uji> dua' : sample[resource][config.fields[0].key]);
   assert.equal((await call('edit', { id: '999' })).status, 404);
   assert.equal((await call('edit', { id: 'bad' })).status, 404);
-  assert.equal((await call('edit', { id: '1', data: { ...sample[resource], [config.statusOnly ? 'status' : config.fields[0].key]: config.statusOnly ? 'tidak aktif' : 'Diperbarui', nama: config.statusOnly ? 'Diabaikan' : sample[resource].nama } })).status, 303);
+  assert.equal((await call('edit', { id: '1', data: { ...sample[resource], [config.statusOnly ? 'status' : config.fields[0].key]: config.statusOnly ? 'tidak aktif' : config.fields[0].type === 'date' ? '2026-10-26' : 'Diperbarui', nama: config.statusOnly ? 'Diabaikan' : sample[resource].nama } })).status, 303);
   const [[edited]] = await c.query(`SELECT * FROM ${config.table} WHERE id=1`);
   if (config.statusOnly) { assert.equal(edited.nama, row.nama); assert.equal(edited.status, 'tidak aktif'); }
   for (const f of config.fields.filter(f => f.type === 'number')) assert.equal((await call('edit', { id: '1', data: { ...sample[resource], [f.key]: '2147483648' } })).status, 422);
-  if (config.view) { assert.equal((await call('view', { id: '1' })).status, 200); assert.equal((await call('delete', { id: '1', data: { confirm: 'wrong' } })).status, 422); }
+  if (config.view) assert.equal((await call('view', { id: '1' })).status, 200);
+  if (config.singleDelete) assert.equal((await call('delete', { id: '1', data: { confirm: 'wrong' } })).status, 422);
   assert.equal((await call('bulkDelete', { data: { id_1: '1', bad: '1' } })).status, 422);
   assert.equal((await call('bulkDelete', { data: { id_1: '1', id_999: '1' } })).status, 404);
   for (const [table, key] of config.related || []) {
    await c.execute(`INSERT INTO ${table} (id,${key}) VALUES (1,1)`);
+   if (config.count) {
+    const counted = await call('list', { params: new URLSearchParams('export=xlsx') });
+    const book = new ExcelJS.Workbook(); await book.xlsx.load(counted.xlsx);
+    assert.equal(book.worksheets[0].getRow(1).values.includes('Jumlah Soal'), true);
+    assert.equal(book.worksheets[0].getCell('C1').value, 'Jumlah Soal'); assert.equal(book.worksheets[0].getCell('C2').value, 1);
+   }
    assert.equal((await call('bulkDelete', { data: { id_1: '1', id_2: '1' } })).status, 422);
    const [[count]] = await c.query(`SELECT COUNT(*) AS n FROM ${config.table}`); assert.equal(count.n, 2);
    await c.execute(`DELETE FROM ${table} WHERE id=1`);
@@ -97,8 +109,42 @@ for (const [resource, config] of Object.entries(masterResources)) test(`${resour
    const [[stored]] = await c.query('SELECT deskripsi_kategori FROM kategori_fasilitas ORDER BY id DESC LIMIT 1');
    assert.equal(stored.deskripsi_kategori, long.trim());
   }
-  const created = await post('/create', { ...sample[resource], _csrf: 'csrf' }); assert.equal(created.status, 303); assert.equal(created.headers.get('location'), '/dashboard/' + resource);
+  const created = await post('/create', { ...sample[resource], ...(resource === 'tema-soal' ? { nama_tema: 'HTTP baru' } : {}), _csrf: 'csrf' }); assert.equal(created.status, 303); assert.equal(created.headers.get('location'), '/dashboard/' + resource);
   assert.equal((await post('', { _csrf: 'csrf' })).status, 405);
+  if (resource === 'program-pendidikan') {
+   assert.doesNotMatch(row.deskripsi, /script/); assert.match(row.deskripsi, /<strong>/);
+   assert.equal((await call('edit', { id: '1', data: { ...sample[resource], deskripsi: '<script>bad</script>' } })).status, 422);
+  }
+  if (resource === 'kalender-akademik') for (const invalid of ['2026-02-30', 'bad', '0000-01-01']) assert.equal((await call('create', { data: { ...sample[resource], tanggal: invalid } })).status, 422);
+  if (config.importable) {
+   const template = await fetch(base + '/template', { headers }); assert.equal(template.status, 200);
+   const book = new ExcelJS.Workbook(); await book.xlsx.load(Buffer.from(await template.arrayBuffer()));
+   const sheet = book.worksheets[0];
+   const values = resource === 'kalender-akademik' ? [2026, 10, 27, 2026, 10, 28, 'Kegiatan impor', 'Catatan', 'hijau'] : resource === 'nama-kota' ? ['BOGOR', 'بوغور'] : ['Peserta impor', 'Juara 1', 'Lomba', 'Nasional', 'Mahad', 2026];
+   sheet.addRow(values);
+   const upload = async bytes => { const form = new FormData(); form.set('_csrf', 'csrf'); form.set('workbook', new Blob([bytes]), 'uji.xlsx'); return fetch(base + '/import', { method: 'POST', headers: { ...headers, origin }, body: form, redirect: 'manual' }); };
+   assert.equal((await upload(Buffer.from('bad'))).status, 422);
+   const bytes = Buffer.from(await book.xlsx.writeBuffer());
+   assert.equal((await call('import', { data: { workbook: Buffer.alloc(1048577) } })).status, 422);
+   assert.equal((await call('import', { data: { workbook: bytes }, access: { permissions: [] } })).status, 403);
+   assert.equal((await upload(bytes)).status, 303);
+   const [[imported]] = await c.query(`SELECT * FROM ${config.table} ORDER BY id DESC LIMIT 1`);
+   if (resource === 'kalender-akademik') { assert.equal(imported.warna, '#28a745'); assert.equal(imported.tanggal, '2026-10-27'); }
+   if (resource === 'nama-kota') {
+    assert.equal(imported.nama_latin, 'bogor');
+    await c.execute('UPDATE nama_kota SET status=1 WHERE id=?', [imported.id]);
+    sheet.getCell('B2').value = 'محدث';
+    assert.equal((await upload(Buffer.from(await book.xlsx.writeBuffer()))).status, 303);
+    const [[updated]] = await c.execute('SELECT * FROM nama_kota WHERE id=?', [imported.id]); assert.equal(updated.status, 1); assert.equal(updated.nama_arab, 'محدث');
+    const allowed = access.permissions; access.permissions = ['create_' + config.permission];
+    assert.equal((await upload(bytes)).status, 403); access.permissions = allowed;
+   }
+   const [[before]] = await c.query(`SELECT COUNT(*) AS n FROM ${config.table}`);
+   sheet.addRow(values); sheet.getCell('A3').value = { formula: '1+1', result: 2 };
+   assert.equal((await upload(Buffer.from(await book.xlsx.writeBuffer()))).status, 422);
+   const [[after]] = await c.query(`SELECT COUNT(*) AS n FROM ${config.table}`); assert.equal(after.n, before.n);
+   const denied = await call('template', { access: { permissions: [] } }); assert.equal(denied.status, 403);
+  }
   access.permissions = [];
   assert.equal((await fetch(base, { headers })).status, 403);
   assert.equal((await post('/create', { ...sample[resource], _csrf: 'csrf' })).status, 403);
