@@ -25,6 +25,14 @@ export function documentFiles(row) {
   if(normalized!=='madrasah')result.push(['foto_ijazah_smp','Ijazah SMP']);
   return result;
 }
+export function candidateFiles(row) {
+  const fields=[['foto','Pass Foto'],['foto_akta_lahir','Akta Lahir'],['foto_kartu_keluarga','Kartu Keluarga']];
+  const payments={'Madrasah':'madrasah',"Darul 'Ilmi":'darul_ilmi',"Ma'had 'Aly":'mahad_aly','Mahdon Tarbawi':'mahdon_tarbawi'};
+  const diplomas={'Madrasah':'sd',"Darul 'Ilmi":'smp',"Ma'had 'Aly":'sma'};
+  if(payments[row.jenjang])fields.push([`foto_pembayaran_psb_${payments[row.jenjang]}`,'Bukti Pembayaran']);
+  if(diplomas[row.jenjang])fields.push([`foto_ijazah_${diplomas[row.jenjang]}`,'Ijazah']);
+  return fields;
+}
 const validId = id => /^[1-9]\d{0,14}$/.test(id);
 const allowed = (access, mutation, scope) => scope==='documents' ? (mutation ? access.permissions.includes('update_berkas::santri::wali') : access.permissions.includes('view_any_berkas::santri::wali') || access.permissions.includes('update_berkas::santri::wali')) : access.permissions.includes('view_any_santri::wali') && (!mutation || access.permissions.includes('update_santri::wali'));
 const select = `SELECT s.*, sc.id IS NOT NULL AS status_defined, (SELECT f.path FROM foto_santris f WHERE f.santri_id=s.id ORDER BY f.id LIMIT 1) AS foto FROM santris s LEFT JOIN status_catatan sc ON sc.status=s.status WHERE s.id=? AND s.no_kk=?`;
@@ -32,9 +40,9 @@ export function createWaliFiles(db=pool, root=new URL('../storage/uploads/',impo
   async function record(c,id,kk,lock=false) { const [rows]=await c.execute(select+(lock?' FOR UPDATE':''),[id,kk]); return rows[0]; }
   return async function files({user,access,id,field,action='read',image,scope='card'}) {
     const mutation=action!=='read';
-    if (!allowed(access,mutation,scope)) return {status:403};
+    if (scope==='candidate' ? (mutation || !access.permissions.includes('view_any_calon::santri')) : !allowed(access,mutation,scope)) return {status:403};
     const kk=String(user.nomor_kk??'').trim();
-    if (!kk || !validId(id) || !/^[a-z_]+$/.test(field)) return {status:404};
+    if ((scope!=='candidate' && !kk) || !validId(id) || !/^[a-z_]+$/.test(field)) return {status:404};
     if (!['read','upload','delete'].includes(action)) return {status:404};
     let converted;
     if (action==='upload') {
@@ -48,8 +56,8 @@ export function createWaliFiles(db=pool, root=new URL('../storage/uploads/',impo
     const c=await db.getConnection(); let path;
     try {
       if(mutation) await c.beginTransaction();
-      const row=await record(c,id,kk,mutation);
-      if (!row || !(scope==='documents' ? [...documentFiles(row),...(!mutation?[['foto_ijazah_sd'],['foto_ijazah_smp'],['foto_akta_lahir'],['foto_kartu_keluarga']]:[])] : cardFiles(row)).some(([name])=>name===field)) {if(mutation)await c.rollback();return {status:404};}
+      const row=scope==='candidate' ? (await c.execute(`SELECT s.*, (SELECT f.path FROM foto_santris f WHERE f.santri_id=s.id ORDER BY f.id LIMIT 1) AS foto FROM santris s WHERE s.id=? AND s.status NOT IN ('Santri','Lulus','Di Keluarkan')`,[id]))[0][0] : await record(c,id,kk,mutation);
+      if (!row || !(scope==='candidate' ? candidateFiles(row) : scope==='documents' ? [...documentFiles(row),...(!mutation?[['foto_ijazah_sd'],['foto_ijazah_smp'],['foto_akta_lahir'],['foto_kartu_keluarga']]:[])] : cardFiles(row)).some(([name])=>name===field)) {if(mutation)await c.rollback();return {status:404};}
       if(!mutation) {
         if(!row[field])return {status:404};
         try {

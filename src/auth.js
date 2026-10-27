@@ -94,6 +94,8 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
           if(!file.startsWith(root+sep)||!/^fotoProfil\//.test(user.avatar_url)||!['.png','.jpg','.jpeg','.webp'].includes(extname(file).toLowerCase()))return send(404,'Foto tidak ditemukan.','text/plain');
           const image=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize(512,512,{fit:'inside',withoutEnlargement:true}).webp().toBuffer();return send(200,image,'image/webp');
         }
+        const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
+        if(candidateFile){const result=await files({user,access,id:candidateFile[1],field:candidateFile[2],scope:'candidate'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
         const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete))?$/);
         if(candidatePage){const result=await candidatesHandler({access,action:candidatePage[2]||'list',id:candidatePage[1],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'calon-santri');}
         const admissionPage=path.match(/^\/dashboard\/penerimaan-santri(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);

@@ -307,3 +307,5 @@ Pengurutan Calon Santri juga tersedia pada kolom NISN, NIK, asal sekolah, jenis 
 Pencarian Calon Santri kini juga mencakup status dan kode gelombang; status, kode gelombang, dan catatan dapat diurutkan pada daftar maupun ekspor. Tes `node --test test/candidates.test.js` memeriksa query, escaping pencarian dan pengurutan menggunakan database tiruan. Verifikasi SQL nyata dan visual masih diperlukan.
 
 Ekspor Excel calon santri terpilih tersedia sebagai aksi massal untuk pengguna dengan izin daftar, maksimal 100 ID dan hanya status calon. Tes terisolasi memeriksa izin, validasi, query dan isi workbook; pengujian SQL/HTTP nyata masih diperlukan.
+
+Pratinjau berkas Calon Santri mencakup pass foto, akta, kartu keluarga, bukti pembayaran dan ijazah sesuai jenjang. Endpoint memerlukan permission daftar, memeriksa status calon dan hanya membaca gambar dalam direktori unggahan; berkas disajikan ulang sebagai JPEG. Tes terisolasi memeriksa pemetaan, izin, batas path, status dan tautan tabel. Surat komitmen, ZIP, cetak serta verifikasi SQL/HTTP dan visual operasional masih belum selesai.
