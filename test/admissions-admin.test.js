@@ -1,0 +1,46 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+import { pool } from '../src/db.js';
+import { createAdmissionsAdmin } from '../src/admissions-admin.js';
+const access={permissions:['view_any_penerimaan::santri','create_penerimaan::santri','update_penerimaan::santri','delete_penerimaan::santri','delete_any_penerimaan::santri']};
+const data={program_pendidikan_id:'1',tahun:'2026',gelombang:'1',tanggal_mulai:'2026-01-01',tanggal_selesai:'2026-12-31',tanggal_tes:'2027-01-02',biaya_pendaftaran:'250000',kuota:'20',status:'aktif',catatan:'<script>uji</script>'};
+test('pengaturan penerimaan: permission, validasi, CRUD dan perlindungan santri pada SQL TEMPORARY',async()=>{
+ const c=await pool.getConnection();
+ try{
+  await c.query('CREATE TEMPORARY TABLE penerimaan_santris (id INT AUTO_INCREMENT PRIMARY KEY,program_pendidikan_id INT,tahun VARCHAR(4),gelombang INT,kode_gelombang VARCHAR(255) UNIQUE,tanggal_mulai DATE,tanggal_selesai DATE,tanggal_tes DATE,biaya_pendaftaran BIGINT UNSIGNED,kuota INT UNSIGNED,status VARCHAR(20),catatan TEXT,created_at DATETIME,updated_at DATETIME)');
+  await c.query('CREATE TEMPORARY TABLE program_pendidikans (id INT PRIMARY KEY,nama_program VARCHAR(255))');
+  await c.query('CREATE TEMPORARY TABLE santris (id INT PRIMARY KEY,penerimaan_santri_id INT)');
+  await c.query("INSERT INTO program_pendidikans VALUES (1,'Madrasah'),(2,\"Darul 'Ilmi\")");
+  const db={getConnection:async()=>({execute:(...a)=>c.execute(...a),beginTransaction:()=>c.beginTransaction(),commit:()=>c.commit(),rollback:()=>c.rollback(),release(){}})};
+  const admissions=createAdmissionsAdmin(db);
+  const call=(action,extra={})=>admissions({access,action,csrf:'csrf',...extra});
+  for(const action of ['list','create','edit','delete','bulkDelete'])assert.equal((await call(action,{id:'1',access:{permissions:[]}})).status,403);
+  for(const invalid of [{tanggal_mulai:'2026-02-30'},{tanggal_selesai:'2025-01-01'},{tahun:'abc'},{gelombang:'5'},{biaya_pendaftaran:'-1'},{program_pendidikan_id:'999'},{status:'lain'}])assert.equal((await call('create',{data:{...data,...invalid}})).status,422);
+  assert.equal((await call('create',{data})).status,303);
+  assert.equal((await call('create',{data})).status,422);
+  assert.match((await call('list',{params:new URLSearchParams('q=MD-2026')})).body,/MD-2026-G1/);
+  assert.doesNotMatch((await call('list',{params:new URLSearchParams('q=%25')})).body,/MD-2026-G1/);
+  assert.doesNotMatch((await call('list',{params:new URLSearchParams('status=nonaktif')})).body,/MD-2026-G1/);
+  assert.equal((await call('list',{params:new URLSearchParams('status=invalid')})).status,422);
+  const result=await call('list',{params:new URLSearchParams('status=aktif&export=xlsx')});
+  const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(result.xlsx);
+  assert.equal(workbook.getWorksheet('Data').getCell('A2').value,'MD-2026-G1');
+  const empty=await call('list',{params:new URLSearchParams('status=nonaktif&export=xlsx')});
+  const emptyWorkbook=new ExcelJS.Workbook();await emptyWorkbook.xlsx.load(empty.xlsx);assert.equal(emptyWorkbook.getWorksheet('Data').rowCount,1);
+  assert.equal((await call('list',{params:new URLSearchParams('export=xlsx'),access:{permissions:[]}})).status,403);
+  assert.match((await call('edit',{id:'1'})).body,/&lt;script&gt;uji/);
+  assert.equal((await call('edit',{id:'999'})).status,404);
+  assert.equal((await call('edit',{id:'1',data:{...data,program_pendidikan_id:'2',gelombang:'2'}})).status,303);
+  const [[row]]=await c.query('SELECT kode_gelombang,status FROM penerimaan_santris WHERE id=1');assert.equal(row.kode_gelombang,'DI-2026-G2');assert.equal(row.status,'aktif');
+  await c.query('INSERT INTO santris VALUES (1,1)');
+  assert.equal((await call('delete',{id:'1',data:{_csrf:'csrf'}})).status,409);
+  assert.equal((await call('bulkDelete',{data:{_csrf:'csrf',id_1:'1'}})).status,409);
+  assert.equal((await call('bulkDelete',{data:{_csrf:'csrf',id_1:'1',bad:'1'}})).status,422);
+  const [[still]]=await c.query('SELECT COUNT(*) AS n FROM santris');assert.equal(still.n,1);
+  await c.query('DELETE FROM santris');
+  assert.equal((await call('delete',{id:'1',data:{_csrf:'csrf'}})).status,303);
+  assert.equal((await call('delete',{id:'1',data:{_csrf:'csrf'}})).status,404);
+ }finally{await c.query('DROP TEMPORARY TABLE IF EXISTS santris,penerimaan_santris,program_pendidikans');c.release();}
+});
+test.after(()=>pool.end());

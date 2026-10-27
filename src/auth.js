@@ -1,4 +1,16 @@
+import { candidates } from './candidates.js';
+import { admissionsAdmin } from './admissions-admin.js';
+import { referralSources } from './referral-sources.js';
+import { statusNotes } from './status-notes.js';
+import { waliDocuments } from './wali-documents.js';
+import { waliRegistration } from './wali-create.js';
+import { waliEdit } from './wali-edit.js';
+import { waliFiles } from './wali-files.js';
+import { waliWidget } from './wali-widget.js';
+import { admissionStats } from './admission-stats.js';
+import { dashboardStats } from './dashboard-stats.js';
 import bcrypt from 'bcryptjs';
+import { waliStudents } from './wali-students.js';
 import { randomBytes,createHash,timingSafeEqual } from 'node:crypto';
 import { mkdir,writeFile,realpath,readFile } from 'node:fs/promises';
 import { resolve,sep,extname } from 'node:path';
@@ -41,7 +53,7 @@ async function readForm(req) {
   }
   throw new FormError('Format formulir tidak didukung.',415);
 }
-export function createAuthHandler({store=authStore,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
+export function createAuthHandler({store=authStore,students=waliStudents,editStudent=waliEdit,registerStudent=waliRegistration,wali=waliWidget,files=waliFiles,documents=waliDocuments,notes=statusNotes,referrals=referralSources,admissionsAdminHandler=admissionsAdmin,candidatesHandler=candidates,stats=dashboardStats,admissions=admissionStats,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
   const cookieName=secure?'__Host-alyusro_node_session':'alyusro_node_session';
   const duration=s=>s.user_id?(s.remember?400*86400:sessionMinutes*60):3600;
   return async function handleAuth(req,res,path) {
@@ -60,6 +72,7 @@ export function createAuthHandler({store=authStore,sendMail=sendResetMail,now=()
       s.expires_at=now()+duration(s);await store.putSession(s);if(previous)await store.deleteSession(previous.id);setCookie(raw);
     };
     const page=async(view,message='',status=200,details={})=>send(status,authPage(view,s,user,access,message,status,details));
+    const moduleResult=(result,filename)=>{if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}return page(path,'',result.status,{module:result});};
     try {
       if(!['GET','HEAD','POST'].includes(req.method))return send(405,'Metode tidak tersedia.','text/plain');
       if(cookie&&/^[a-f0-9]{64}$/.test(cookie))s=await store.session(hash(cookie));
@@ -81,6 +94,29 @@ export function createAuthHandler({store=authStore,sendMail=sendResetMail,now=()
           if(!file.startsWith(root+sep)||!/^fotoProfil\//.test(user.avatar_url)||!['.png','.jpg','.jpeg','.webp'].includes(extname(file).toLowerCase()))return send(404,'Foto tidak ditemukan.','text/plain');
           const image=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize(512,512,{fit:'inside',withoutEnlargement:true}).webp().toBuffer();return send(200,image,'image/webp');
         }
+        const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete))?$/);
+        if(candidatePage){const result=await candidatesHandler({access,action:candidatePage[2]||'list',id:candidatePage[1],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'calon-santri');}
+        const admissionPage=path.match(/^\/dashboard\/penerimaan-santri(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);
+        if(admissionPage){const action=admissionPage[1]?'create':admissionPage[3]?'edit':'list';const result=await admissionsAdminHandler({access,action,id:admissionPage[2],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'penerimaan-santri');}
+        const referralPage=path.match(/^\/dashboard\/sumber-informasi(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);
+        if(referralPage){const action=referralPage[1]?'create':referralPage[3]?'edit':'list';const result=await referrals({access,action,id:referralPage[2],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'sumber-informasi');}
+        const statusPage=path.match(/^\/dashboard\/status-catatan(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);
+        if(statusPage){const action=statusPage[1]?'create':statusPage[3]?'edit':'list';const result=await notes({access,action,id:statusPage[2],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'status-catatan');}
+        const documentFile=path.match(/^\/dashboard\/dokumen-wali\/([1-9]\d{0,14})\/([a-z_]+)$/);
+        if(documentFile && documentFile[2]!=='edit'){const result=await files({user,access,id:documentFile[1],field:documentFile[2],scope:'documents'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
+        const documentPage=path.match(/^\/dashboard\/dokumen-wali(?:\/([1-9]\d{0,14})\/edit)?$/);
+        if(documentPage){const result=await documents(user,access,new URL(req.url,'http://localhost').searchParams,documentPage[1],s.csrf);return moduleResult(result,'dokumen-santri');}
+        const fileMatch=path.match(/^\/dashboard\/wali-berkas\/([1-9]\d{0,14})\/([a-z_]+)$/);
+        if(fileMatch){const result=await files({user,access,id:fileMatch[1],field:fileMatch[2]});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
+        if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf});return page(path,'',result.status,{module:result});}
+        const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
+        if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf});return page(path,'',result.status,{module:result});}
+        if(path==='/dashboard/santri-wali'||path.startsWith('/dashboard/santri-wali/')){
+          const id=path==='/dashboard/santri-wali'?undefined:path.slice('/dashboard/santri-wali/'.length);
+          const result=await students(user,access,new URL(req.url,'http://localhost').searchParams,id);
+          return moduleResult(result,'data-santri');
+        }
+        if(path==='/dashboard')return page(path,'',200,{wali:await wali(user,access,s.csrf),stats:await stats(access),admissions:await admissions(access,new URL(req.url,'http://localhost').searchParams)});
         if(path==='/dashboard/edit-profile')return page(path,'',200,{sessions:await store.sessions(user.id)});
         if(path==='/dashboard/password-reset/reset'){const params=new URL(req.url,'http://localhost').searchParams;return page(path,'',200,{email:params.get('email'),token:params.get('token')});}
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
@@ -117,6 +153,33 @@ export function createAuthHandler({store=authStore,sendMail=sendResetMail,now=()
         if(!await store.reset(data.email,hash(data.token),await bcrypt.hash(data.password,12),token()))throw new FormError('Tautan reset tidak valid atau sudah kedaluwarsa.');
         return redirect('/dashboard/login');
       }
+      if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
+      const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
+      if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
+      if(path==='/dashboard/calon-santri/bulk-export'){const result=await candidatesHandler({access,action:'bulkExport',data});return moduleResult(result,'calon-santri-terpilih');}
+      if(path==='/dashboard/calon-santri/bulk-status'){const result=await candidatesHandler({access,action:'bulkStatus',csrf:s.csrf,data});return result.status===303?redirect('/dashboard/calon-santri'):page(path,'',result.status,{module:result});}
+      const candidateAction=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/(status|note|delete)$/);
+      if(candidateAction){const result=await candidatesHandler({access,action:candidateAction[2],id:candidateAction[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard/calon-santri'):page(path,'',result.status,{module:result});}
+      const admissionAction=path.match(/^\/dashboard\/penerimaan-santri\/(create|delete|([1-9]\d{0,14})\/(edit|delete))$/);
+      if(admissionAction){const action=admissionAction[2]?admissionAction[3]:admissionAction[1]==='delete'?'bulkDelete':'create';const result=await admissionsAdminHandler({access,action,id:admissionAction[2],csrf:s.csrf,data});return result.status===303?redirect('/dashboard/penerimaan-santri'):page(path,'',result.status,{module:result});}
+      const referralAction=path.match(/^\/dashboard\/sumber-informasi\/(create|delete|([1-9]\d{0,14})\/edit)$/);
+      if(referralAction){const action=referralAction[2]?'edit':referralAction[1];const result=await referrals({access,action,id:referralAction[2],csrf:s.csrf,data});return result.status===303?redirect('/dashboard/sumber-informasi'):page(path,'',result.status,{module:result});}
+      const statusAction=path.match(/^\/dashboard\/status-catatan\/(create|delete|([1-9]\d{0,14})\/edit)$/);
+      if(statusAction){const action=statusAction[2]?'edit':statusAction[1];const result=await notes({access,action,id:statusAction[2],csrf:s.csrf,data});return result.status===303?redirect('/dashboard/status-catatan'):page(path,'',result.status,{module:result});}
+      const documentAction=path.match(/^\/dashboard\/dokumen-wali\/([1-9]\d{0,14})\/([a-z_]+)\/(upload|delete)$/);
+      if(documentAction){
+        const result=await files({user,access,id:documentAction[1],field:documentAction[2],action:documentAction[3],image:data.avatar,scope:'documents'});
+        if(result.status===303)return redirect(`/dashboard/dokumen-wali/${documentAction[1]}/edit`);
+        const module=await documents(user,access,new URLSearchParams(),documentAction[1],s.csrf);
+        const message=result.status===422?'Pilih gambar PNG, JPEG, atau WebP yang valid, maksimal 1 MB.':result.status===403?'Anda tidak memiliki izin mengubah berkas.':'Berkas tidak ditemukan.';
+        return page(path,message,result.status,{module});
+      }
+      const fileAction=path.match(/^\/dashboard\/wali-berkas\/([1-9]\d{0,14})\/([a-z_]+)\/(upload|delete)$/);
+      if(fileAction){
+        const result=await files({user,access,id:fileAction[1],field:fileAction[2],action:fileAction[3],image:data.avatar});
+        if(result.status===303)return redirect('/dashboard');
+        throw new FormError(result.status===422?'Pilih gambar PNG, JPEG, atau WebP yang valid, maksimal 1 MB.':result.status===403?'Anda tidak memiliki izin mengubah berkas.':'Berkas tidak ditemukan.',result.status);
+      }
       if(path==='/dashboard/logout'){
         await store.deleteSession(s.id);res.setHeader('Set-Cookie',`${cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure?'; Secure':''}`);return redirect('/');
       }
@@ -145,11 +208,11 @@ export function createAuthHandler({store=authStore,sendMail=sendResetMail,now=()
       }
       return send(404,'Halaman tidak ditemukan.','text/plain');
     }catch(error){
-      const destination=path==='/dashboard/nomor-kk'?'/dashboard':path.startsWith('/dashboard/password-reset/')?path:user?'/dashboard/edit-profile':path;
+      const destination=path.startsWith('/dashboard/wali-berkas/')?'/dashboard':path==='/dashboard/nomor-kk'?'/dashboard':path.startsWith('/dashboard/password-reset/')?path:user?'/dashboard/edit-profile':path;
       const message=error.code==='ER_DUP_ENTRY'?'Email atau nomor KK sudah digunakan.':error instanceof FormError?error.message:'Layanan autentikasi belum dapat diproses. Silakan coba lagi.';
       if(!(error instanceof FormError)&&error.code!=='ER_DUP_ENTRY')console.error('Auth:',error.code||error.name);
       if(!s)return send(503,'Layanan autentikasi belum siap.','text/plain');
-      return page(destination,message,error instanceof FormError?error.status:error.code==='ER_DUP_ENTRY'?422:503,{email:formData.email,token:formData.token});
+      return page(destination,message,error instanceof FormError?error.status:error.code==='ER_DUP_ENTRY'?422:503,{email:formData.email,token:formData.token,...(destination==='/dashboard'&&user?{wali:await wali(user,access,s.csrf)}:{})});
     }
   };
 }

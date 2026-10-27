@@ -164,3 +164,146 @@ Kerangka dashboard mengikuti topbar 64 px, sidebar 320 px, judul Dasbor, kartu N
 `node scripts/check-dashboard-ui.js` memeriksa desktop/HP dan terang/gelap menggunakan identitas tiruan: sidebar, Escape, menu akun, persistensi tema, edit/batal KK, serta overflow dan exception JS. Screenshot ada di `storage/auth-preview/dashboard-{light,dark}-{1440,390}.png`. Pengujian ini tidak membuat akun atau mengubah akun asli.
 
 Ikon halaman public, login, dan dashboard Node.js menggunakan font khusus `alyusro-icon`/kelas `ysr-*`. `public/dashboard-icons.css` menyalin definisi ikon dari CSS lama dengan warna mengikuti teks agar terbaca pada tema terang/gelap. Ikon sidebar dipetakan berdasarkan fungsi menu. Kontrol yang tidak memiliki glyph pada font asli, seperti tampil/sembunyikan password dan pilihan tema, menggunakan label teks. Tidak memakai Heroicons pada versi Node.js.
+
+
+## Migrasi Data Santri wali — tahap baca
+
+Menu Data Santri pada grup Wali Santri kini membuka `/dashboard/santri-wali`. Daftar menampilkan nama, nama Arab, jenjang dan status, pencarian literal serta pagination 20 baris. Akses daftar memerlukan `view_any_santri::wali`; detail ringkas `/dashboard/santri-wali/:id` memerlukan `view_santri::wali`. Detail mencakup nomor pendaftaran, NISN dan data lahir. Semua query membatasi `no_kk` pada nomor KK akun saat permintaan berjalan. KK kosong tidak menjalankan query santri; record KK lain/tidak ditemukan mengembalikan 404. Respons memerlukan sesi login dan memakai no-store, termasuk HEAD.
+
+Tahap ini belum mencakup tambah/edit, foto, berkas, cetak, atau widget jadwal penerimaan. Modul penuh tetap belum dicentang pada checklist. Pemeriksaan visual desktop/HP untuk halaman baru belum dilakukan. Perubahan modul Laravel yang sudah ada di workspace tidak diubah.
+
+Verifikasi 27 Oktober 2026: 14 tes autentikasi/rute wali dan SQL wali lulus pada pemeriksaan terarah. Fixture HTTP memakai identitas tiruan; SQL memakai tabel TEMPORARY, tanpa mengubah santri asli. Mencakup penolakan permission, KK kosong/lintas KK, validasi parameter, escaping HTML, pencarian `%` literal, pagination, login redirect, HEAD dan no-store.
+
+Regresi penuh setelah perubahan: `node --test` lulus **44/44 tes** (termasuk tes publik dan SQL autentikasi). `git diff --check` bersih.
+
+### Lanjutan migrasi — widget statistik (27 Oktober 2026)
+
+Widget Santri dan Alumni pada `/dashboard` membaca agregat `santris` untuk Taud, Kuttab, Madrasah, Darul 'Ilmi dan Ma'had 'Aly. Status mengikuti widget Laravel: `santri` untuk santri aktif dan `lulus` untuk alumni. Grafik batang HTML/CSS menyertakan angka per jenjang dan total, termasuk saat data kosong. Query hanya berjalan untuk status widget yang diizinkan oleh `widget_JumlahSantri` / `widget_JumlahAlumni`; data ini merupakan agregat operasional sesuai permission, bukan daftar santri per KK.
+
+Verifikasi: seluruh 46 tes lulus setelah implementasi statistik, termasuk fixture SQL tabel TEMPORARY untuk status, jenjang, agregasi, data kosong dan pembatasan query berdasarkan permission. Tes HTTP tambahan mencakup sesi, permission, no-store dan HEAD. Pemeriksaan visual widget baru desktop/HP masih tertunda. Widget penerimaan, alur tambah/edit santri dan berkas masih mengikuti item terbuka pada checklist.
+
+### Lanjutan migrasi — rekap penerimaan Madrasah (27 Oktober 2026)
+
+Widget `/dashboard` dengan permission `widget_JumlahPsbSantriMadrasah` kini membaca rekap lima status pendaftar, ikhwan/akhwat dan total dari database. Filter GET `psb_year` dan `psb_wave` memilih tahun serta gelombang; tanpa parameter memilih gelombang MD terbaru. Nilai kosong memilih semua. Saat mengganti tahun, pilih semua gelombang lalu terapkan untuk memuat opsi tahun tersebut. Kombinasi tahun/gelombang yang tidak sesuai ditolak dengan pesan dan tautan reset. Semua pilihan tetap membatasi agregat ke penerimaan berkode MD dan jenjang Madrasah, termasuk pilihan semua tahun/gelombang.
+
+Verifikasi: 49 tes penuh lulus, termasuk fixture MySQL TEMPORARY untuk default terbaru, filter tahun/gelombang, penolakan gelombang DI, pemisahan jenjang/status, nilai nol dan permission. Tes HTTP tambahan memeriksa sesi, permission, no-store serta penerusan filter GET. Pemeriksaan visual desktop/HP dan tema terang/gelap masih terbuka; modul tambah/edit santri serta berkas belum selesai.
+
+### Penyesuaian gaya widget (27 Oktober 2026)
+
+Grafik santri/alumni dikembalikan ke batang vertikal dengan lima warna jenjang mengikuti widget Laravel. Filter penerimaan memakai pembungkus input, font, warna tema dan ukuran kontrol dashboard; tabel memakai header/footer, angka rata tengah dan warna ikhwan/akhwat. Preview dengan data tiruan diperiksa pada 1440 dan 390 px, tema terang/gelap: halaman tidak melebar horizontal, tabel dapat digeser di HP. Empat tes statistik SQL/permission lulus. Pemeriksaan ini memvalidasi layout widget, belum menyatakan kesetaraan visual seluruh dashboard dengan Laravel.
+
+### Lanjutan migrasi — widget wali (27 Oktober 2026)
+
+Dasbor kini menampilkan jadwal penerimaan aktif dan mendatang terdekat serta maksimal 20 santri sesuai nomor KK akun. Permission widget mengikuti Laravel (`view_any_santri::wali`); tautan detail memerlukan `view_santri::wali`. KK kosong tidak menjalankan query santri. Tautan daftar lengkap menyediakan pencarian dan pagination yang sudah tersedia. Jadwal dibatasi status aktif dan tanggal Asia/Jakarta, termasuk hari mulai/selesai. Jika beberapa periode aktif bertumpang tindih, dipilih tanggal mulai lalu ID paling awal agar hasil konsisten.
+
+Verifikasi: 53 tes penuh lulus, termasuk SQL tabel TEMPORARY untuk batas tanggal, periode nonaktif/berakhir, pemilihan jadwal terdekat, dan isolasi KK. Fixture HTTP memeriksa permission, KK akun, HEAD dan no-store. `node scripts/check-dashboard-ui.js` memakai contoh widget terisolasi pada desktop 1440 px/HP 390 px serta tema terang/gelap; tidak ada overflow horizontal atau exception JavaScript. Screenshot di `storage/auth-preview/dashboard-{light,dark}-{1440,390}.png`. Tidak mengubah akun atau santri asli.
+
+Widget lengkap tetap belum selesai: catatan/status lanjutan, unggahan/berkas dan tindakan penerimaan menunggu migrasi. Tambah/edit santri juga belum tersedia.
+
+### Penyesuaian tampilan widget wali
+
+Widget memakai susunan sumber Laravel: tombol pendaftaran ketika ada penerimaan aktif, informasi jadwal mendatang jika belum aktif, atau pesan jadwal belum tersedia. Santri ditampilkan sebagai kartu berisi nama, nomor pendaftaran, jenjang, status dan catatan. Tombol pendaftaran masih nonaktif karena alur pendaftaran belum dipindahkan; foto, berkas, edit dan catatan status tambahan juga masih menunggu migrasi. Daftar kartu dibatasi 20 dengan tautan ke daftar lengkap.
+
+Verifikasi: 53 tes lulus termasuk keadaan jadwal dan isolasi KK. Preview browser dengan data tiruan diperiksa pada desktop/HP dan tema terang/gelap; `git diff --check` bersih.
+
+### Lanjutan migrasi — catatan status dan kontak wali
+
+Kartu santri menampilkan catatan tambahan dari `status_catatan` yang cocok dengan status santri. Jika master menyediakan label dan nomor WhatsApp, tombol mengisi `{nama}` dan `{nomor}` dengan data santri; tautan HTTPS yang disimpan di master juga dapat dibuka. Label kosong atau `tidak ada` menyembunyikan tombol. Tautan selain HTTPS ditolak. Query tetap dibatasi KK akun dan tidak mengubah data.
+
+Verifikasi: 53 tes lulus, termasuk fixture MySQL TEMPORARY untuk catatan, substitusi pesan, tautan grup, label nonaktif, penolakan URL berbahaya dan isolasi KK. Preview contoh pada desktop/HP dan tema terang/gelap lulus. Berkas, edit formulir dan pendaftaran tetap belum dipindahkan.
+
+### Lanjutan migrasi — dokumen pada kartu wali
+
+Kartu menampilkan pass foto, akta lahir, kartu keluarga, bukti pembayaran, ijazah dan surat komitmen sesuai jenjang/status sumber Laravel. Gambar dapat dibuka oleh akun dengan `view_any_santri::wali`; unggah/ganti dan hapus juga memerlukan `update_santri::wali`. Semua operasi memeriksa nomor KK dan jenis dokumen yang berlaku pada record. Unggahan PNG/JPEG/WebP maksimal 1 MB dikonversi menjadi JPEG, dengan tinggi maksimal 1080 piksel. Penghapusan mengosongkan hubungan di database; berkas lama dipertahankan di penyimpanan untuk menghindari penghapusan berkas yang mungkin masih dirujuk aplikasi lain.
+
+Database dipakai bersama Laravel, tetapi folder `alyusro-node/storage/uploads` merupakan salinan lokal yang terpisah dari `storage/app/public` Laravel. Unggahan Node.js karena itu belum otomatis tersedia di direktori Laravel; diperlukan penyimpanan bersama atau sinkronisasi sebelum kedua aplikasi dipakai bersamaan. Berkas lama yang tidak lagi dirujuk perlu dikelola saat menyiapkan penyimpanan bersama. Tombol edit formulir dan pendaftaran masih nonaktif.
+
+Verifikasi: 54 tes lulus, termasuk SQL TEMPORARY dan direktori sementara untuk unggah, baca, hapus, validasi gambar/jenis dokumen, permission dan lintas KK, serta HTTP untuk sesi, CSRF dan Origin. Preview contoh pada desktop/HP tema terang/gelap diperiksa tanpa akun asli.
+
+### Penyesuaian kartu dokumen
+
+Gambar dokumen ditata satu kolom dengan gambar `default.jpg` dan ukuran 100 × 133 piksel mengikuti kartu Laravel. Klik gambar kosong membuka modal unggah dan pratinjau; gambar yang tersedia dapat diperbesar dan tombol hapus meminta konfirmasi. Formulir edit dan pendaftaran tetap menunggu migrasi. Pemeriksaan browser mencakup buka/tutup modal pada desktop/HP dan tema terang/gelap; 54 tes lulus.
+
+### Lanjutan migrasi — edit formulir santri wali
+
+Tombol Edit Formulir pada kartu membuka `/dashboard/santri-wali/:id/edit` untuk pengguna dengan `update_santri::wali`. Formulir memindahkan isian santri, sumber informasi, orang tua, wali dan kontak dari resource Laravel; nomor KK dan status dipertahankan di server. Perubahan jenjang hanya diterima bila terdapat penerimaan aktif pada tanggal Asia/Jakarta; server memilih gelombang aktif terbaru, membuat nomor pendaftaran, dan mengubah status `santri` menjadi `belum terverifikasi` seperti sumber Laravel. Jenjang lama tetap bisa disimpan tanpa penerimaan aktif. NIK dan NISN diperiksa untuk duplikasi, dan panjang data mengikuti batas kolom database saat lebih pendek dari formulir lama. Nilai tersembunyi dari browser tidak menentukan status, KK atau nomor pendaftaran.
+
+Verifikasi: 56 tes lulus, termasuk SQL TEMPORARY untuk sukses, validasi gagal, duplikasi, KK lain/kosong, permission, manipulasi KK/status dan perubahan jenjang; HTTP memeriksa sesi, CSRF dan no-store. Formulir diuji pada browser dengan data tiruan. Pengujian operasional bersama Laravel belum dilakukan; pendaftaran santri baru tetap belum tersedia. Database saat ini tidak memiliki indeks unik untuk NIK/NISN, sehingga penulisan bersamaan oleh aplikasi lain masih perlu diselaraskan. Tautan Lihat detail santri dihapus dari kartu sesuai sumber Laravel.
+
+### Lanjutan migrasi — pendaftaran santri wali
+
+Saat ada penerimaan aktif, tombol pada kartu membuka formulir pendaftaran bagi pengguna dengan permission `create_santri::wali`. Formulir memakai aturan validasi yang sama dengan edit dan mengisi data keluarga dari santri sebelumnya dengan KK yang sama. Server memeriksa ulang penerimaan dan sumber informasi, menyimpan KK dari akun, menetapkan status `belum terverifikasi`, serta membuat nomor pendaftaran berdasarkan gelombang. Baris gelombang dikunci selama pembuatan nomor di Node.js; batas unik nomor pendaftaran database menangani benturan dengan penulis lain. Setelah berhasil, pengguna kembali ke dasbor.
+
+Verifikasi: 57 tes lulus. Fixture MySQL TEMPORARY memeriksa pendaftaran berhasil, duplikasi, isian tidak valid, penerimaan tidak aktif, permission, KK kosong dan manipulasi KK/status/nomor; fixture HTTP memeriksa sesi, CSRF dan no-store. Browser memeriksa formulir tiruan. Uji penulisan bersamaan dengan Laravel belum dilakukan. NIK/NISN belum memiliki indeks unik database, sehingga pemeriksaan duplikasi belum menjamin keunikan terhadap penulisan bersamaan lintas aplikasi.
+
+### Lanjutan migrasi — Dokumen santri wali
+
+Menu Dokumen santri membuka `/dashboard/dokumen-wali`, berisi daftar, pencarian nama, pagination dan thumbnail ijazah SD/SMP, akta serta KK. Pengguna dengan `update_berkas::santri::wali` dapat membuka Perbarui Berkas dan mengunggah, mengganti atau menghapus pass foto, akta, KK, ijazah dan bukti PSB sesuai jenjang. Alur unggah disimpan per dokumen; pratinjau berkas memerlukan sesi dan KK yang cocok. Hak akses daftar dan perubahan mengikuti permission resource dokumen (`view_any_berkas::santri::wali` dan `update_berkas::santri::wali`), terpisah dari permission widget santri. Varian penulisan jenjang Darul Ilmi, Ma'had Aly dan TK Taud dinormalisasi agar pilihan dokumen tidak hilang karena tanda baca.
+
+Verifikasi: 58 tes lulus, termasuk fixture MySQL TEMPORARY dan berkas sementara untuk permission, KK kosong/lintas KK, jenis dokumen, unggah/baca/hapus dan fixture HTTP untuk sesi, CSRF dan no-store. Preview browser pada desktop/HP dan tema terang/gelap ada di `storage/auth-preview/dokumen-{light,dark}-{1440,390}.png`. Penyimpanan Node.js masih terpisah dari Laravel seperti dijelaskan di atas; pengujian operasional penyimpanan bersama belum dilakukan.
+
+### Lanjutan migrasi — Status Catatan
+
+Menu Status Catatan kini membuka daftar dengan pencarian literal, pengurutan status/tanggal dan pagination. Pengguna berizin dapat menambah, mengedit, dan menghapus hingga 20 status terpilih sekaligus dengan konfirmasi. Status unik mengikuti constraint database; pesan mendukung `{nama}` dan `{nomor}` pada kartu wali. Nomor kontak harus 9–15 digit atau tautan HTTPS yang valid, sesuai cara kartu Node.js membuka tautan. Hak daftar/tambah/edit/hapus massal menggunakan permission Spatie masing-masing.
+
+Verifikasi: 60 tes lulus, termasuk tabel MySQL TEMPORARY untuk CRUD, status duplikat, escaping, pencarian literal, validasi tautan, permission dan hapus massal; fixture HTTP memeriksa sesi, CSRF, HEAD dan no-store. Pemeriksaan browser dengan data tiruan mencakup desktop/HP serta tema terang/gelap; screenshot berada di `storage/auth-preview/status-catatan-{light,dark}-{1440,390}.png`.
+
+### Lanjutan migrasi — Sumber Informasi
+
+Menu Sumber Informasi menyediakan daftar, pencarian literal, pengurutan nama/jumlah santri, pagination, tambah, edit dan hapus massal. Slug dibuat di server saat tambah dan dipertahankan saat edit, mengikuti field slug nonaktif di resource lama. Slug menggunakan normalisasi Unicode; untuk beberapa aksara hasilnya dapat berbeda dari transliterasi Laravel. Constraint database menolak slug duplikat. Setiap tindakan memerlukan permission Spatie masing-masing.
+
+Penghapusan hingga 20 sumber sekaligus meminta konfirmasi dan memberi tahu bahwa foreign key Laravel mengosongkan `referral_source_id` pada santri terkait (`ON DELETE SET NULL`). Verifikasi: 62 tes lulus, termasuk fixture SQL TEMPORARY untuk jumlah, duplikasi slug, validasi dan permission; fixture HTTP memeriksa sesi, CSRF, HEAD dan no-store. Fixture tabel TEMPORARY tidak memverifikasi aksi foreign key; perilaku tersebut berdasarkan migrasi Laravel. Preview desktop/HP dan tema terang/gelap tersimpan di `storage/auth-preview/sumber-informasi-{light,dark}-{1440,390}.png`.
+
+### Lanjutan migrasi — Penerimaan Santri
+
+Menu Penerimaan Santri kini menyediakan daftar, pencarian kode, pagination, tambah/edit program, tahun, gelombang, tanggal, biaya, kuota, status dan catatan. Kode gelombang dihasilkan server mengikuti prefix model Laravel; kode duplikat ditolak. Validasi juga menolak tanggal tidak valid atau tanggal selesai sebelum mulai, serta angka negatif atau di luar batas database. Permission daftar/tambah/edit/hapus tunggal/hapus massal mengikuti policy Laravel.
+
+Penghapusan meminta konfirmasi dan hanya diperbolehkan jika gelombang tidak mempunyai santri. Perlindungan ini disengaja karena foreign key Laravel `santris_penerimaan_santri_id_foreign` memakai `ON DELETE CASCADE`, yang dapat menghapus santri terkait. Penghapusan menggunakan transaksi dan penguncian record penerimaan sebelum memeriksa santri. Uji tabel TEMPORARY memeriksa penolakan ketika ada santri, tetapi tidak mensimulasikan foreign key atau penulisan bersamaan antar aplikasi.
+
+Verifikasi: 64 tes lulus, termasuk SQL TEMPORARY untuk permission, validasi, duplikasi kode, CRUD, dan penolakan hapus gelombang yang dipakai; fixture HTTP memeriksa sesi, CSRF, HEAD dan no-store. Preview desktop/HP dan tema terang/gelap tersimpan di `storage/auth-preview/penerimaan-{light,dark}-{1440,390}.png`.
+
+### Komponen tabel dashboard
+
+`src/dashboard-table.js` menyediakan `tableQuery`, `renderTable`, dan `selectedTableIds` untuk tabel dashboard baru. Komponen menangani validasi pencarian literal dan halaman, opsi pengurutan yang dibatasi daftar yang ditentukan modul, pagination, escaping teks, tabel responsif, pilihan semua baris pada halaman, serta validasi ID untuk aksi massal. Gunakan `query.pattern` sebagai parameter SQL dan `query.limit`/`query.offset` untuk query yang tetap ditentukan modul. Untuk pengurutan, petakan nilai `query.sort` ke kolom SQL yang sudah diizinkan; jangan mengambil ekspresi SQL langsung dari request.
+
+Definisi kolom mendukung `key` untuk teks, `value` untuk pemformatan teks, dan `html` untuk tautan atau gambar. Callback `html` menghasilkan markup tepercaya dan **wajib** meng-escape setiap nilai record dengan `esc`. Komponen tidak menerapkan permission, pembatasan KK, CSRF, aturan bisnis, atau mutasi database; modul pemanggil tetap harus menerapkan dan mengujinya. Pilih semua hanya memilih baris di halaman yang tampil, maksimal 20 untuk aksi massal yang sudah ada.
+
+Lima daftar sudah menggunakan komponen ini: Data Santri wali, Dokumen santri, Status Catatan, Sumber Informasi, dan Penerimaan Santri. Widget statistik tetap memakai tabel khusus karena merupakan ringkasan, bukan daftar yang dapat dicari atau dipilih. Verifikasi: 66 tes lulus, termasuk fixture SQL/HTTP yang ada dan tes komponen untuk validasi, escaping, pagination, sort dan ID massal. Browser memeriksa tampilan serta pilih semua pada desktop/HP dan tema terang/gelap.
+
+Analisis lanjutan menemukan batas lebar formulir umum ikut menyempitkan tabel dengan aksi massal. CSS sekarang mengecualikan formulir tabel dan pencariannya dari batas itu serta mengecilkan kolom checkbox. Seluruh 66 tes lulus setelah perubahan; pemeriksaan visual perubahan ini di browser masih diperlukan. Perbedaan yang belum selesai dicatat dalam checklist migrasi.
+
+Rancangan tabel berikutnya menambahkan toolbar ringkas, pilihan kolom sementara dan pengurutan lewat judul kolom yang didukung. Preview fixture desktop/HP terang/gelap dan 66 tes lulus. Total hasil, ukuran halaman, filter dan ekspor masih memerlukan implementasi per modul; pilihan kolom kembali ke keadaan awal saat halaman dimuat ulang.
+
+Tabel bersama kini mendukung jumlah hasil dari query, 10/20/50/100 baris per halaman, nomor halaman, menu aksi massal dan pilihan kolom yang disimpan di browser. Filter dan ekspor masih belum diimplementasikan.
+
+Penerimaan Santri memiliki filter status dan ekspor Excel (.xlsx) mengikuti pencarian/filter dan permission daftar, dibatasi 10.000 baris; nilai teks disimpan sebagai teks, bukan rumus. Menu aksi baris tersedia pada daftar dengan tindakan edit. Tes SQL TEMPORARY memeriksa filter, isi workbook Excel dan penolakan tanpa izin; 66 tes lulus dan preview dashboard desktop/HP terang/gelap lulus. Filter lima daftar dan kolom pertama tetap terlihat saat tabel HP digeser.
+
+API tabel bersama: `tableQuery` memvalidasi pagination/pengurutan, `tableFilters` memvalidasi pilihan filter, `renderTable` menerima konfigurasi kolom, filter, ekspor dan aksi massal, `tableRowActions` merender menu aksi, dan `tableExcel` membentuk workbook Excel dengan nilai teks yang tidak menjadi rumus. Setiap modul tetap menyediakan query dan endpoint ekspornya serta memeriksa permission dan batas data; komponen tidak secara otomatis memberikan akses ekspor. Penerimaan Santri adalah contoh integrasi filter dan ekspor yang sudah berfungsi. Kelima daftar yang dipindahkan sudah terhubung ke ekspor Excel; filter dikonfigurasi sesuai data masing-masing daftar.
+
+Kelima daftar memakai ekspor Excel sesuai izin daftar dan pencarian. Data wali dibatasi KK; ekspor dokumen hanya mencantumkan status unggah. Tes fixture memeriksa isi workbook dan isolasi KK.
+
+Filter tersedia pada lima daftar: jenjang/status santri wali, status unggah akta, status penerimaan, label tombol status, dan keberadaan santri terkait pada sumber informasi. Filter juga diterapkan pada ekspor. Kolom pertama tetap terlihat saat tabel digeser di HP.
+
+Tanggal perubahan Status Catatan ditampilkan dalam format `d M Y H:i` seperti resource Laravel dan memakai format yang sama dalam ekspor Excel. Tes terisolasi memeriksa tampilan dan isi workbook tanpa mengubah zona waktu; dua tes Status Catatan, termasuk fixture MySQL TEMPORARY, lulus. Kesetaraan visual tabel secara menyeluruh masih perlu diperiksa.
+
+Daftar Santri Wali mendukung pengurutan nama, nama Arab, jenjang dan status melalui judul kolom. Ekspor mengikuti urutan dan filter yang sama serta tetap dibatasi KK akun. Tes terisolasi memeriksa validasi parameter, query, batas KK dan isi workbook; pemeriksaan visual dan operasional modul masih diperlukan.
+
+### Migrasi Calon Santri (bertahap)
+
+Daftar `/dashboard/calon-santri` mendukung pencarian, pengurutan, filter status/gelombang/jenis kelamin, ekspor Excel dan perubahan status per calon sesuai permission. Tes `node test/candidates.test.js` memeriksa permission, validasi, query dan isi workbook dengan database tiruan. Pengujian SQL/HTTP dengan database nyata, pemeriksaan visual, filter tanggal, aksi massal, berkas dan cetak masih diperlukan sebelum modul dianggap selesai. Pada lingkungan sandbox saat ini pengujian yang membutuhkan MySQL gagal karena koneksi ke 127.0.0.1:3306 ditolak (EPERM).
+
+### Calon Santri: lanjutan migrasi
+
+Filter tanggal inklusif, pilihan beberapa status dan gelombang, edit catatan, dan hapus tunggal tersedia dengan validasi dan permission. Filter dipertahankan pada pencarian, pagination, dan ekspor. Tes unit menggunakan database tiruan; pengujian database/HTTP nyata, relasi penghapusan, dan tampilan masih diperlukan. Aksi massal, berkas/ZIP, dan cetak belum tersedia.
+
+### Calon Santri: status massal dan pencarian
+
+Status calon terpilih dapat diubah sekaligus dengan permission update, pilihan status dari master, konfirmasi dan batas 100 ID. Kandidat yang telah berstatus Santri/Lulus/Di Keluarkan dikecualikan saat penulisan. Nomor HP menyediakan tautan WhatsApp; pencarian juga mencakup jenis kelamin, nomor HP dan tanggal daftar, dan urutan awal menampilkan pendaftar terbaru. Tes modul menggunakan database tiruan memeriksa permission, validasi, query, tautan dan workbook; pengujian SQL/HTTP nyata dan pemeriksaan visual masih diperlukan. Ekspor pilihan massal, ZIP dan cetak belum tersedia.
+
+Verifikasi lanjutan: seluruh 76 tes lulus dengan akses MySQL lokal; tes khusus fitur Calon Santri baru masih menggunakan database tiruan. Server Node.js di port 8075 di-restart dan halaman login merespons HTTP 200.
+
+Pengurutan Calon Santri juga tersedia pada kolom NISN, NIK, asal sekolah, jenis kelamin dan nomor HP, termasuk pada ekspor yang mengikuti filter. Tes `node --test test/candidates.test.js` memeriksa query daftar/ekspor dan penolakan ekspresi sort yang tidak diizinkan menggunakan database tiruan. Verifikasi SQL dan browser tetap terbuka.
+
+Pencarian Calon Santri kini juga mencakup status dan kode gelombang; status, kode gelombang, dan catatan dapat diurutkan pada daftar maupun ekspor. Tes `node --test test/candidates.test.js` memeriksa query, escaping pencarian dan pengurutan menggunakan database tiruan. Verifikasi SQL nyata dan visual masih diperlukan.
+
+Ekspor Excel calon santri terpilih tersedia sebagai aksi massal untuk pengguna dengan izin daftar, maksimal 100 ID dan hanya status calon. Tes terisolasi memeriksa izin, validasi, query dan isi workbook; pengujian SQL/HTTP nyata masih diperlukan.

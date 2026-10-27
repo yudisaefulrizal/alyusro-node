@@ -11,3 +11,35 @@ function setSidebar(open){document.body.classList.toggle('sidebar-open',open);si
 sidebarButton?.addEventListener('click',()=>setSidebar(!document.body.classList.contains('sidebar-open')));overlay?.addEventListener('click',()=>{setSidebar(false);sidebarButton?.focus();});
 const account=document.querySelector('.account-menu');document.addEventListener('click',event=>{if(account&&!account.contains(event.target))account.open=false;});document.addEventListener('keydown',event=>{if(event.key==='Escape'){setSidebar(false);if(account?.open){account.open=false;account.querySelector('summary').focus();}}});
 for(const widget of document.querySelectorAll('.kk-widget')){const summary=widget.querySelector('.kk-summary'),editor=widget.querySelector('.kk-editor');function edit(value){summary.hidden=value;editor.hidden=!value;(value?editor.querySelector('input[name=nomor_kk]'):summary.querySelector('button')).focus();}widget.querySelector('[data-kk-edit]')?.addEventListener('click',()=>edit(true));widget.querySelector('[data-kk-cancel]')?.addEventListener('click',()=>edit(false));}
+
+const uploadDialog=document.querySelector('.wali-upload-dialog');
+if(uploadDialog){
+ const form=uploadDialog.querySelector('form'),input=uploadDialog.querySelector('input[type=file]'),preview=uploadDialog.querySelector('.wali-upload-preview');
+ let previewUrl;
+ function resetPreview(){if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=undefined;preview.hidden=true;preview.removeAttribute('src');}
+ document.querySelectorAll('[data-wali-upload]').forEach(button=>button.addEventListener('click',()=>{form.reset();resetPreview();form.action=button.dataset.waliUpload;uploadDialog.querySelector('h2').textContent='Upload '+button.dataset.waliLabel;uploadDialog.showModal();}));
+ uploadDialog.querySelector('[data-wali-cancel]').addEventListener('click',()=>uploadDialog.close());
+ uploadDialog.addEventListener('close',resetPreview);
+ input.addEventListener('change',()=>{resetPreview();if(input.files[0]){previewUrl=URL.createObjectURL(input.files[0]);preview.src=previewUrl;preview.hidden=false;}});
+}
+for(const button of document.querySelectorAll('[data-wali-zoom]'))button.addEventListener('click',()=>button.querySelector('img').classList.toggle('zoomed'));
+for(const form of document.querySelectorAll('[data-wali-delete]'))form.addEventListener('submit',event=>{if(!confirm('Yakin ingin menghapus foto ini?'))event.preventDefault();});
+for(const form of document.querySelectorAll('[data-admission-delete]'))form.addEventListener('submit',event=>{const boxes=form.querySelectorAll('input[type=checkbox]');if((boxes.length&&!form.querySelector('input[type=checkbox]:checked'))||!confirm('Hapus gelombang penerimaan yang dipilih?'))event.preventDefault();});
+for(const form of document.querySelectorAll('[data-table-bulk]')){
+ const all=form.querySelector('[data-table-select-all]'),rows=[...form.querySelectorAll('[data-table-select-row]')];
+ const sync=()=>{all.checked=rows.length>0&&rows.every(row=>row.checked);all.indeterminate=rows.some(row=>row.checked)&&!all.checked;};
+ all.addEventListener('change',()=>{for(const row of rows)row.checked=all.checked;sync();});
+ for(const row of rows)row.addEventListener('change',sync);
+ form.addEventListener('submit',event=>{if(!rows.some(row=>row.checked)||!confirm(form.dataset.confirm))event.preventDefault();});
+}
+for(const table of document.querySelectorAll('[data-table]')){
+ const key='table-columns:'+table.dataset.tableKey;
+ let hidden=[];try{const saved=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(saved))hidden=saved;}catch{}
+ for(const toggle of table.querySelectorAll('[data-table-column]')){
+  const index=toggle.dataset.tableColumn;
+  const apply=()=>{for(const cell of table.querySelectorAll('[data-column]'))if(cell.dataset.column===index)cell.hidden=!toggle.checked;};
+  toggle.checked=!hidden.includes(index);apply();
+  toggle.addEventListener('change',()=>{apply();try{localStorage.setItem(key,JSON.stringify([...table.querySelectorAll('[data-table-column]')].filter(item=>!item.checked).map(item=>item.dataset.tableColumn)));}catch{}});
+ }
+}
+for(const select of document.querySelectorAll('[data-table-page-size]'))select.addEventListener('change',()=>{location.href=select.value;});
