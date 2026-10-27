@@ -1,0 +1,849 @@
+{
+  "ijazah": {
+    "table": "ijazahs",
+    "code": "MD",
+    "fields": [
+      {
+        "key": "santri_id",
+        "label": "Santri Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "santris",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "event_id",
+        "label": "Event Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "event_mahads",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "nilai_quran",
+        "label": "Nilai Quran",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_bahasa_arab",
+        "label": "Nilai Bahasa Arab",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_tajwid",
+        "label": "Nilai Tajwid",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_khot",
+        "label": "Nilai Khot",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_tauhid",
+        "label": "Nilai Tauhid",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_hadist",
+        "label": "Nilai Hadist",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_fiqih",
+        "label": "Nilai Fiqih",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_tafsir",
+        "label": "Nilai Tafsir",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nilai_nahwu",
+        "label": "Nilai Nahwu",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "verifikasi_kepala_sekolah",
+        "label": "Verifikasi Kepala Sekolah",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "verifikasi_mudir",
+        "label": "Verifikasi Mudir",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "catatan_mudir",
+        "label": "Catatan Mudir",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      },
+      {
+        "key": "catatan_kepsek",
+        "label": "Catatan Kepsek",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      }
+    ],
+    "grades": [
+      "nilai_quran",
+      "nilai_bahasa_arab",
+      "nilai_tajwid",
+      "nilai_khot",
+      "nilai_tauhid",
+      "nilai_hadist",
+      "nilai_fiqih",
+      "nilai_tafsir",
+      "nilai_nahwu"
+    ]
+  },
+  "ijazah-darul-ilmi": {
+    "table": "ijazah_darul_ilmis",
+    "code": "DI",
+    "fields": [
+      {
+        "key": "santri_id",
+        "label": "Santri Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "santris",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "event_id",
+        "label": "Event Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "event_mahads",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "alquran",
+        "label": "Alquran",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "hadits",
+        "label": "Hadits",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tauhid",
+        "label": "Tauhid",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tafsir",
+        "label": "Tafsir",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "fiqih",
+        "label": "Fiqih",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "b_arab",
+        "label": "B Arab",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nahwu",
+        "label": "Nahwu",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "imla_kitabah",
+        "label": "Imla Kitabah",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tajwid",
+        "label": "Tajwid",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tarikh",
+        "label": "Tarikh",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "adab_araby",
+        "label": "Adab Araby",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "mushtalah_hadits",
+        "label": "Mushtalah Hadits",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "ushul_fiqih",
+        "label": "Ushul Fiqih",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "khot",
+        "label": "Khot",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "manhaj",
+        "label": "Manhaj",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "faraidh",
+        "label": "Faraidh",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "qawaidh_fiqhiyah",
+        "label": "Qawaidh Fiqhiyah",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "balaghah",
+        "label": "Balaghah",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "verifikasi_kepala_sekolah",
+        "label": "Verifikasi Kepala Sekolah",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "verifikasi_mudir",
+        "label": "Verifikasi Mudir",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "catatan_mudir",
+        "label": "Catatan Mudir",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      },
+      {
+        "key": "catatan_kepsek",
+        "label": "Catatan Kepsek",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      }
+    ],
+    "grades": [
+      "alquran",
+      "hadits",
+      "tauhid",
+      "tafsir",
+      "fiqih",
+      "b_arab",
+      "nahwu",
+      "imla_kitabah",
+      "tajwid",
+      "tarikh",
+      "adab_araby",
+      "mushtalah_hadits",
+      "ushul_fiqih",
+      "khot",
+      "manhaj",
+      "faraidh",
+      "qawaidh_fiqhiyah",
+      "balaghah"
+    ]
+  },
+  "ijazah-mahad-aly": {
+    "table": "ijazah_mahad_alies",
+    "code": "MA",
+    "fields": [
+      {
+        "key": "santri_id",
+        "label": "Santri Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "santris",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "event_id",
+        "label": "Event Id",
+        "required": true,
+        "max": 15,
+        "relation": {
+          "table": "event_mahads",
+          "column": "nama"
+        }
+      },
+      {
+        "key": "tahsin_1",
+        "label": "Tahsin 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tahsin_2",
+        "label": "Tahsin 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tahsin_3",
+        "label": "Tahsin 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tahsin_4",
+        "label": "Tahsin 4",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "Tajwid",
+        "label": "Tajwid",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tahfizh_1",
+        "label": "Tahfizh 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tahfizh_2",
+        "label": "Tahfizh 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "Tauhid_1",
+        "label": "Tauhid 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "Tauhid_2",
+        "label": "Tauhid 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "Tauhid_3",
+        "label": "Tauhid 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "Tauhid_4",
+        "label": "Tauhid 4",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "bahasa_arab_dasar",
+        "label": "Bahasa Arab Dasar",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "bahsa_arab_lanjutan",
+        "label": "Bahsa Arab Lanjutan",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tafsir_1",
+        "label": "Tafsir 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tafsir_2",
+        "label": "Tafsir 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "tafsir_3",
+        "label": "Tafsir 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "hadits_ahkam_1",
+        "label": "Hadits Ahkam 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "hadits_ahkam_2",
+        "label": "Hadits Ahkam 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "hadits_ahkam_3",
+        "label": "Hadits Ahkam 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "fikih_1",
+        "label": "Fikih 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "fikih_2",
+        "label": "Fikih 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "fikih_3",
+        "label": "Fikih 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nahu_sorf_1",
+        "label": "Nahu Sorf 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nahu_sorf_2",
+        "label": "Nahu Sorf 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "nahu_sorf_3",
+        "label": "Nahu Sorf 3",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "mustholahul_hadits_1",
+        "label": "Mustholahul Hadits 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "mustholahul_hadits_2",
+        "label": "Mustholahul Hadits 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "ushulul_fiqh_1",
+        "label": "Ushulul Fiqh 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "ushulul_fiqh_2",
+        "label": "Ushulul Fiqh 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "sastra_arab_1",
+        "label": "Sastra Arab 1",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "sastra_arab_2",
+        "label": "Sastra Arab 2",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "ulumul_quran",
+        "label": "Ulumul Quran",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "qowaid_fiqhiyah",
+        "label": "Qowaid Fiqhiyah",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "balagoh",
+        "label": "Balagoh",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "akhlak",
+        "label": "Akhlak",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "manhaj",
+        "label": "Manhaj",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "metodologi_penelitian",
+        "label": "Metodologi Penelitian",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "karya_ilmiyah",
+        "label": "Karya Ilmiyah",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "praktek_microteaching",
+        "label": "Praktek Microteaching",
+        "required": true,
+        "max": 100,
+        "type": "decimal",
+        "min": 0
+      },
+      {
+        "key": "judul_karya_ilmiyah_latin",
+        "label": "Judul Karya Ilmiyah Latin",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      },
+      {
+        "key": "judul_karya_ilmiyah_arab",
+        "label": "Judul Karya Ilmiyah Arab",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      },
+      {
+        "key": "verifikasi_kepala_sekolah",
+        "label": "Verifikasi Kepala Sekolah",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "verifikasi_mudir",
+        "label": "Verifikasi Mudir",
+        "required": true,
+        "max": 255,
+        "type": "boolean",
+        "options": [
+          "0",
+          "1"
+        ],
+        "default": "0"
+      },
+      {
+        "key": "catatan_mudir",
+        "label": "Catatan Mudir",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      },
+      {
+        "key": "catatan_kepsek",
+        "label": "Catatan Kepsek",
+        "required": false,
+        "max": 65535,
+        "type": "textarea"
+      }
+    ],
+    "grades": [
+      "tahsin_1",
+      "tahsin_2",
+      "tahsin_3",
+      "tahsin_4",
+      "Tajwid",
+      "tahfizh_1",
+      "tahfizh_2",
+      "Tauhid_1",
+      "Tauhid_2",
+      "Tauhid_3",
+      "Tauhid_4",
+      "bahasa_arab_dasar",
+      "bahsa_arab_lanjutan",
+      "tafsir_1",
+      "tafsir_2",
+      "tafsir_3",
+      "hadits_ahkam_1",
+      "hadits_ahkam_2",
+      "hadits_ahkam_3",
+      "fikih_1",
+      "fikih_2",
+      "fikih_3",
+      "nahu_sorf_1",
+      "nahu_sorf_2",
+      "nahu_sorf_3",
+      "mustholahul_hadits_1",
+      "mustholahul_hadits_2",
+      "ushulul_fiqh_1",
+      "ushulul_fiqh_2",
+      "sastra_arab_1",
+      "sastra_arab_2",
+      "ulumul_quran",
+      "qowaid_fiqhiyah",
+      "balagoh",
+      "akhlak",
+      "manhaj",
+      "metodologi_penelitian",
+      "karya_ilmiyah",
+      "praktek_microteaching"
+    ],
+    "hours": {
+      "tahsin_1": 64,
+      "tahsin_2": 48,
+      "tahsin_3": 48,
+      "tahsin_4": 48,
+      "Tajwid": 32,
+      "tahfizh_1": 144,
+      "tahfizh_2": 144,
+      "Tauhid_1": 32,
+      "Tauhid_2": 32,
+      "Tauhid_3": 32,
+      "Tauhid_4": 32,
+      "bahasa_arab_dasar": 320,
+      "bahsa_arab_lanjutan": 192,
+      "tafsir_1": 32,
+      "tafsir_2": 32,
+      "tafsir_3": 32,
+      "hadits_ahkam_1": 32,
+      "hadits_ahkam_2": 32,
+      "hadits_ahkam_3": 32,
+      "fikih_1": 32,
+      "fikih_2": 32,
+      "fikih_3": 32,
+      "nahu_sorf_1": 48,
+      "nahu_sorf_2": 48,
+      "nahu_sorf_3": 48,
+      "mustholahul_hadits_1": 32,
+      "mustholahul_hadits_2": 32,
+      "ushulul_fiqh_1": 32,
+      "ushulul_fiqh_2": 32,
+      "sastra_arab_1": 32,
+      "sastra_arab_2": 32,
+      "ulumul_quran": 32,
+      "qowaid_fiqhiyah": 32,
+      "balagoh": 32,
+      "akhlak": 32,
+      "manhaj": 32,
+      "metodologi_penelitian": 32,
+      "karya_ilmiyah": 48,
+      "praktek_microteaching": 64
+    }
+  }
+}

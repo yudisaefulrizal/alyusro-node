@@ -1,0 +1,232 @@
+[
+  {
+    "key": "nama",
+    "name": "nama",
+    "label": "Nama"
+  },
+  {
+    "key": "nama_arab",
+    "name": "nama_arab",
+    "label": "Nama Arab"
+  },
+  {
+    "key": "jenis_kelamin",
+    "name": "jenis_kelamin",
+    "label": "Jenis Kelamin"
+  },
+  {
+    "key": "status",
+    "name": "status",
+    "label": "Status"
+  },
+  {
+    "key": "nis",
+    "name": "nis",
+    "label": "Nis"
+  },
+  {
+    "key": "nisn",
+    "name": "nisn",
+    "label": "Nisn"
+  },
+  {
+    "key": "nik",
+    "name": "nik",
+    "label": "Nik"
+  },
+  {
+    "key": "no_kk",
+    "name": "no_kk",
+    "label": "No Kk"
+  },
+  {
+    "key": "no_pendaftaran",
+    "name": "no_pendaftaran",
+    "label": "No Pendaftaran"
+  },
+  {
+    "key": "tempat_lahir",
+    "name": "tempat_lahir",
+    "label": "Tempat Lahir"
+  },
+  {
+    "key": "tanggal_lahir",
+    "name": "tanggal_lahir",
+    "label": "Tanggal Lahir"
+  },
+  {
+    "key": "bulan_lahir",
+    "name": "bulan_lahir",
+    "label": "Bulan Lahir"
+  },
+  {
+    "key": "tahun_lahir",
+    "name": "tahun_lahir",
+    "label": "Tahun Lahir"
+  },
+  {
+    "key": "alamat",
+    "name": "alamat",
+    "label": "Alamat"
+  },
+  {
+    "key": "rt",
+    "name": "rt",
+    "label": "Rt"
+  },
+  {
+    "key": "rw",
+    "name": "rw",
+    "label": "Rw"
+  },
+  {
+    "key": "nama_kelurahan",
+    "name": "kelurahan",
+    "label": "Kelurahan"
+  },
+  {
+    "key": "kecamatan",
+    "name": "kecamatan",
+    "label": "Kecamatan"
+  },
+  {
+    "key": "kode_pos",
+    "name": "kode_pos",
+    "label": "Kode Pos"
+  },
+  {
+    "key": "tempat_tinggal",
+    "name": "tempat_tinggal",
+    "label": "Tempat Tinggal"
+  },
+  {
+    "key": "jenjang",
+    "name": "jenjang",
+    "label": "Jenjang"
+  },
+  {
+    "key": "asal_sekolah",
+    "name": "asal_sekolah",
+    "label": "Asal Sekolah"
+  },
+  {
+    "key": "npsn",
+    "name": "npsn",
+    "label": "Npsn"
+  },
+  {
+    "key": "tinggi_badan",
+    "name": "tinggi_badan",
+    "label": "Tinggi Badan"
+  },
+  {
+    "key": "berat_badan",
+    "name": "berat_badan",
+    "label": "Berat Badan"
+  },
+  {
+    "key": "nama_ayah",
+    "name": "nama_ayah",
+    "label": "Nama Ayah"
+  },
+  {
+    "key": "nik_ayah",
+    "name": "nik_ayah",
+    "label": "Nik Ayah"
+  },
+  {
+    "key": "pekerjaan_ayah",
+    "name": "pekerjaan_ayah",
+    "label": "Pekerjaan Ayah"
+  },
+  {
+    "key": "penghasilan_bulanan_ayah",
+    "name": "penghasilan_ayah",
+    "label": "Penghasilan Ayah"
+  },
+  {
+    "key": "tahun_lahir_ayah",
+    "name": "tahun_lahir_ayah",
+    "label": "Tahun Lahir Ayah"
+  },
+  {
+    "key": "nama_ibu",
+    "name": "nama_ibu",
+    "label": "Nama Ibu"
+  },
+  {
+    "key": "nik_ibu",
+    "name": "nik_ibu",
+    "label": "Nik Ibu"
+  },
+  {
+    "key": "pekerjaan_ibu",
+    "name": "pekerjaan_ibu",
+    "label": "Pekerjaan Ibu"
+  },
+  {
+    "key": "penghasilan_bulanan_ibu",
+    "name": "penghasilan_ibu",
+    "label": "Penghasilan Ibu"
+  },
+  {
+    "key": "tahun_lahir_ibu",
+    "name": "tahun_lahir_ibu",
+    "label": "Tahun Lahir Ibu"
+  },
+  {
+    "key": "nama_wali",
+    "name": "nama_wali",
+    "label": "Nama Wali"
+  },
+  {
+    "key": "nik_wali",
+    "name": "nik_wali",
+    "label": "Nik Wali"
+  },
+  {
+    "key": "pekerjaan_wali",
+    "name": "pekerjaan_wali",
+    "label": "Pekerjaan Wali"
+  },
+  {
+    "key": "penghasilan_bulanan_wali",
+    "name": "penghasilan_wali",
+    "label": "Penghasilan Wali"
+  },
+  {
+    "key": "tahun_lahir_wali",
+    "name": "tahun_lahir_wali",
+    "label": "Tahun Lahir Wali"
+  },
+  {
+    "key": "email",
+    "name": "email",
+    "label": "Email"
+  },
+  {
+    "key": "nomor_hp",
+    "name": "no_hp",
+    "label": "No Hp"
+  },
+  {
+    "key": "hobi",
+    "name": "hobi",
+    "label": "Hobi"
+  },
+  {
+    "key": "catatan",
+    "name": "catatan",
+    "label": "Catatan"
+  },
+  {
+    "key": "jumlah_saudara_kandung",
+    "name": "jumlah_saudara",
+    "label": "Jumlah Saudara"
+  },
+  {
+    "key": "kewarganegaraan",
+    "name": "kewarganegaraan",
+    "label": "Kewarganegaraan"
+  }
+]

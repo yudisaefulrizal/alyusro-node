@@ -1,3 +1,4 @@
+import { handleIntegrationApi } from './integration-api.js';
 import { contentRoot, readContentFile } from './content-files.js';
 import { handleAuth } from './auth.js';
 import { handleArticlePdf } from './article-pdf.js';
@@ -12,7 +13,7 @@ import { render, notFound } from './views.js';
 import { validateRegistration } from './data.js';
 const publicAssets = new Set(JSON.parse(await readFile(new URL('../templates/public-assets.json', import.meta.url), 'utf8').catch(() => '[]')));
 const publicRoot = new URL('../public/', import.meta.url);
-const assets = { '/dashboard-icons.css': ['dashboard-icons.css','text/css'], '/dashboard.js': ['dashboard.js','text/javascript'], '/dashboard.css': ['dashboard.css','text/css'], '/article-page.js': ['article-page.js','text/javascript'], '/calendar-model.js': ['calendar-model.js','text/javascript'], '/calendar-page.js': ['calendar-page.js','text/javascript'], '/prayer-time.js': ['prayer-time.js','text/javascript'], '/prayer-page.js': ['prayer-page.js','text/javascript'], '/style.css': ['style.css', 'text/css'], '/app.js': ['app.js', 'text/javascript'], '/assets/default.jpg': ['assets/default.jpg', 'image/jpeg'], '/assets/logo.png': ['assets/logo.png', 'image/png'], '/legacy.css': ['legacy.css', 'text/css'], '/legacy.js': ['legacy.js', 'text/javascript'], '/public-pages.js': ['public-pages.js','text/javascript'] };
+const assets = { '/cbt.js':['cbt.js','text/javascript'], '/dashboard-icons.css': ['dashboard-icons.css','text/css'], '/dashboard.js': ['dashboard.js','text/javascript'], '/dashboard.css': ['dashboard.css','text/css'], '/article-page.js': ['article-page.js','text/javascript'], '/calendar-model.js': ['calendar-model.js','text/javascript'], '/calendar-page.js': ['calendar-page.js','text/javascript'], '/prayer-time.js': ['prayer-time.js','text/javascript'], '/prayer-page.js': ['prayer-page.js','text/javascript'], '/style.css': ['style.css', 'text/css'], '/app.js': ['app.js', 'text/javascript'], '/assets/default.jpg': ['assets/default.jpg', 'image/jpeg'], '/assets/logo.png': ['assets/logo.png', 'image/png'], '/legacy.css': ['legacy.css', 'text/css'], '/legacy.js': ['legacy.js', 'text/javascript'], '/public-pages.js': ['public-pages.js','text/javascript'] };
 for (const weight of [400,500,600,700]) assets[`/dashboard-fonts/inter-${weight}.woff2`] = [`dashboard-fonts/inter-${weight}.woff2`, 'font/woff2'];
 export const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -21,6 +22,18 @@ export const server = http.createServer(async (req, res) => {
   const send = (status, type, body) => { res.writeHead(status, { 'Content-Type': `${type}; charset=utf-8` }); res.end(req.method === 'HEAD' ? undefined : body); };
   try {
     const path = new URL(req.url, 'http://localhost').pathname;
+    if (['GET','HEAD'].includes(req.method) && ['/ujian','/prepare-exam','/cbt/prepare'].includes(path)){res.writeHead(303,{Location:'/dashboard/ujian'});res.end();return;}
+    if(['GET','HEAD'].includes(req.method)){
+      const aliases={'/download-template-santri':'/dashboard/santri/template','/download-template-kalender':'/dashboard/kalender-akademik/template','/template/nama-kota':'/dashboard/nama-kota/template','/cbtsoal/download-template':'/dashboard/cbt-soal/template','/download-template-ijazah-madrasah':'/dashboard/ijazah/template','/download-template-ijazah-darul-ilmi':'/dashboard/ijazah-darul-ilmi/template','/download-template-ijazah-mahad-aly':'/dashboard/ijazah-mahad-aly/template','/export-santri':'/dashboard/santri?export=xlsx'};
+      let target=aliases[path],match=path.match(/^\/ijazah\/([1-9]\d*)\/(cetak|transkrip)(?:\/(darul\/ilmi|mahad\/aly))?$/);
+      if(match)target='/dashboard/'+(match[3]==='darul/ilmi'?'ijazah-darul-ilmi':match[3]==='mahad/aly'?'ijazah-mahad-aly':'ijazah')+'/'+match[1]+'/'+(match[2]==='cetak'?'print':'transcript');
+      match=path.match(/^\/santri\/([1-9]\d*)\/cetak\/kartu\/santri$/);if(match)target='/dashboard/santri/'+match[1]+'/card';
+      match=path.match(/^\/cetak\/formulir\/calon-santri\/([1-9]\d*)$/);if(match)target='/dashboard/calon-santri/'+match[1]+'/print';
+      match=path.match(/^\/bukti-pendaftaran\/zip\/([1-9]\d*)$/);if(match)target='/dashboard/calon-santri/'+match[1]+'/zip';
+      match=path.match(/^\/cek-status-santri\/([1-9]\d*)$/);if(match)target='/dashboard/santri/'+match[1]+'/status';
+      if(target){res.writeHead(303,{Location:target});res.end();return;}
+    }
+    if (await handleIntegrationApi(req,res,path,new URL(req.url,'http://localhost').searchParams)) return;
     if (await handleAuth(req,res,path)) return;
     if (await handleArticlePdf(req,res,path)) return;
     if (await handlePublicApi(req,res,send,path,new URL(req.url,'http://localhost').searchParams)) return;

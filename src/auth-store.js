@@ -19,7 +19,7 @@ return {
   async email(value) { return (await run('SELECT * FROM users WHERE email=? LIMIT 1',[value]))[0]; },
   async access(id) {
     const roles = await run("SELECT r.name FROM roles r JOIN model_has_roles m ON m.role_id=r.id WHERE m.model_id=? AND m.model_type=? AND r.guard_name='web'",[id,modelType]);
-    const permissions = await run(`SELECT DISTINCT p.name FROM permissions p WHERE p.guard_name='web' AND (p.id IN (SELECT permission_id FROM model_has_permissions WHERE model_id=? AND model_type=?) OR p.id IN (SELECT rp.permission_id FROM role_has_permissions rp JOIN model_has_roles m ON m.role_id=rp.role_id WHERE m.model_id=? AND m.model_type=?))`,[id,modelType,id,modelType]);
+    const permissions = await run(`SELECT DISTINCT p.name FROM permissions p WHERE p.guard_name='web' AND (p.id IN (SELECT permission_id FROM model_has_permissions WHERE model_id=? AND model_type=?) OR p.id IN (SELECT rp.permission_id FROM role_has_permissions rp JOIN model_has_roles m ON m.role_id=rp.role_id JOIN roles r ON r.id=m.role_id AND r.guard_name='web' WHERE m.model_id=? AND m.model_type=?))`,[id,modelType,id,modelType]);
     return {roles:roles.map(r=>r.name),permissions:permissions.map(p=>p.name)};
   },
   async register(data) {

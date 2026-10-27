@@ -1,3 +1,6 @@
+import { diplomaResources } from './diploma-resources.js';
+import { cbtResources, verificationFilters } from './cbt-resources.js';
+import studentFields from '../templates/santri-fields.json' with { type: 'json' };
 import { contentResources } from './content-resources.js';
 import { contentRoot, saveContentFile, readContentFile, removeNewContentFile } from './content-files.js';
 import ExcelJS from 'exceljs';
@@ -17,6 +20,9 @@ const status = options => text('status', 'Status', { options });
 // Only resources and actions present in the active Laravel resources are enabled here.
 export const calendarColors = { merah: '#ff0000', biru: '#083e6b', hijau: '#28a745', ungu: '#6f42c1', kuning: '#ffc107', oranye: '#fd7e14', pink: '#e83e8c', coklat: '#8b4513', teal: '#20c997', abu: '#6c757d', hitam: '#000000', putih: '#ffffff' };
 export const masterResources = {
+ ...diplomaResources,
+ ...cbtResources,
+ santri: { title: 'Santri', table: 'santris', permission: 'santri', importable: true, view: true, fields: studentFields, search: ['nama','nama_arab','nis','nisn','jenis_kelamin','jenjang','status','catatan'], sorts: ['nama','nama_arab','nis','jenjang','status','created_at','updated_at'], filterFields: ['status','kelas_id'], extraFilters:[{name:'jenjang',label:'Jenjang',options:['taud','kuttab','madrasah',"darul 'ilmi","ma'had 'aly",'TK TAUD','Mahdon Tarbawi'].map(value=>({value,label:value}))}], listFields: ['nama','nama_arab','jenis_kelamin','nis','nis_darul_ilmi','jenjang','status','catatan','kelas_id'], defaultDirection: 'desc', related: [['ijazahs','santri_id'],['ijazah_darul_ilmis','santri_id'],['ijazah_mahad_alies','santri_id'],['sabaq','santri_id']], deleteChildren: [['foto_santris','santri_id']], extraActions: row=>[{label:'Berkas / Foto',href:`/dashboard/santri/${row.id}/documents`},{label:'Cetak kartu',href:`/dashboard/santri/${row.id}/card`}], extraBulk: access=>[{label:'Ekspor terpilih',action:'/dashboard/santri/bulk-export'},...(access.permissions.includes('update_santri')?[{label:'Ubah kelas',action:'/dashboard/santri/bulk-class'},{label:'Ubah status',action:'/dashboard/santri/bulk-status'}]:[])] },
  ...contentResources,
  'program-pendidikan': { title: 'Program Pendidikan', table: 'program_pendidikans', permission: 'program::pendidikan',
   fields: [text('nama_program', 'Nama Program'), ...['deskripsi', 'list_target', 'target_hafalan'].map(key => text(key, key.replaceAll('_', ' '), { type: 'rich', max: 65535, required: key !== 'target_hafalan' })), ...['link_pendaftaran', 'biaya_pendaftaran', 'biaya_daftar_ulang', 'biaya_tahunan', 'biaya_spp'].map(key => text(key, key.replaceAll('_', ' '), { required: false })), text('deskripsi_biaya', 'Deskripsi Biaya', { required: false, type: 'textarea', max: 65535 })],
@@ -52,14 +58,14 @@ const validId = id => /^[1-9]\d{0,14}$/.test(String(id));
 const has = (access, config, permission) => access.permissions.includes(`${permission}_${config.permission}`);
 const stamp = value => value == null ? '—' : String(value);
 
-function form(config, base, row, action, csrf, errors = [], input = row) {
+function form(config, base, row, action, csrf, errors = [], input = row, params = new URLSearchParams()) {
  const fields = config.statusOnly && action === 'edit' ? config.fields.filter(f => f.key === 'status') : config.fields;
- return { status: errors.length ? 422 : 200, title: `${action === 'create' ? 'Tambah' : 'Edit'} ${config.title}`, body: `<section class="status-note-form"><form method="post" ${config.fields.some(f => f.type === 'file') ? 'enctype="multipart/form-data"' : ''} action="${base}/${action === 'create' ? 'create' : `${row.id}/edit`}"><input type="hidden" name="_csrf" value="${esc(csrf)}">${errors.length ? `<div role="alert" class="message">${errors.map(e => `<p>${esc(e)}</p>`).join('')}</div>` : ''}${config.statusOnly && action === 'edit' ? `<p>${esc(row.nama)}</p>` : ''}${fields.map(f => {
-  const raw = input[f.key] ?? f.default ?? (f.options ? f.options[0] : '');
+ return { status: errors.length ? 422 : 200, title: `${action === 'create' ? 'Tambah' : 'Edit'} ${config.title}`, body: `<section class="status-note-form"><form method="post" ${config.fields.some(f => f.type === 'file') ? 'enctype="multipart/form-data"' : ''} action="${base}/${action === 'create' ? 'create' : `${row.id}/edit`}"><input type="hidden" name="_csrf" value="${esc(csrf)}">${errors.length ? `<div role="alert" class="message">${errors.map(e => `<p>${esc(e)}</p>`).join('')}</div>` : ''}${config.statusOnly && action === 'edit' ? `<p>${esc(row.nama)}</p>` : ''}${config.formIntro ? config.formIntro({base,row,params,data:input}) : ''}${fields.map(f => {
+  const raw = input[f.key] ?? f.default ?? (f.options && f.required ? f.options[0] : '');
   const value = f.type === 'rich' ? sanitize(String(raw), richOptions) : String(raw);
   if (f.type === 'file') return `<label class="field"><span class="field-label">${esc(f.label)} (maksimal 10 MB)</span>${row[f.key] ? `<a href="${base}/${row.id}/file">Berkas saat ini</a>` : ''}<input type="file" name="upload" ${f.image ? 'accept="image/jpeg,image/png,image/webp,image/gif"' : 'accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar"'} ${action === 'create' && f.required ? 'required' : ''}></label>`;
   const attrs = `name="${f.key}" ${f.required ? 'required' : ''}`;
-  const control = f.type === 'rich' ? `<textarea ${attrs} data-rich-editor rows="8" maxlength="${f.max}">${esc(value)}</textarea>` : f.options ? `<select ${attrs}>${f.options.map(v => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(f.labels?.[v] ?? optionLabel(f, v))}</option>`).join('')}</select>` : f.type === 'textarea' ? `<textarea ${attrs} rows="4" maxlength="${f.max}">${esc(value)}</textarea>` : `<input ${attrs} type="${f.type || 'text'}" ${f.type === 'number' ? `min="${f.min}" max="${f.max}" step="1"` : `maxlength="${f.max}"`} value="${esc(value)}">`;
+  const control = f.type === 'rich' ? `<textarea ${attrs} data-rich-editor rows="8" maxlength="${f.max}">${esc(value)}</textarea>` : f.options ? `<select ${attrs}>${f.required?'':'<option value="">Tidak dipilih</option>'}${f.options.map(v => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(f.labels?.[v] ?? optionLabel(f, v))}</option>`).join('')}</select>` : f.type === 'textarea' ? `<textarea ${attrs} rows="4" maxlength="${f.max}">${esc(value)}</textarea>` : `<input ${attrs} type="${f.type==='decimal'?'number':f.type || 'text'}" ${['number','decimal'].includes(f.type) ? `min="${f.min}" max="${f.max}" step="${f.type==='decimal'?'any':'1'}"` : `maxlength="${f.max}"`} value="${esc(value)}">`;
   return `<label class="field"><span class="field-label">${esc(f.label)}${f.required ? ' <span class="required">*</span>' : ''}</span><span class="input-wrap">${control}</span></label>`;
  }).join('')}<button type="submit">Simpan</button> <a href="${base}">Batal</a></form></section>` };
 }
@@ -70,12 +76,13 @@ export function validateMaster(fields, data) {
   if (f.type === 'file') continue;
   const value = String(data[f.key] ?? f.default ?? '').trim();
   if (f.required && !value) errors.push(`${f.label} wajib diisi.`);
-  if (f.type === 'number') {
-   if (value && (!/^-?\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < f.min || Number(value) > f.max)) errors.push(`${f.label} harus bilangan bulat antara ${f.min} dan ${f.max}.`);
+  if (['number','decimal'].includes(f.type)) {
+   if (value && (!(f.type==='decimal'?/^-?\d+(?:\.\d+)?$/:/^-?\d+$/).test(value) || !(f.type==='decimal'?Number.isFinite(Number(value)):Number.isSafeInteger(Number(value))) || Number(value) < f.min || Number(value) > f.max)) errors.push(`${f.label} harus ${f.type==='decimal'?'angka':'bilangan bulat'} antara ${f.min} dan ${f.max}.`);
    values[f.key] = value ? Number(value) : null;
   } else {
-   if (f.options && !f.options.includes(value)) errors.push(`${f.label} tidak valid.`);
+   if (f.options && (value || f.required) && !f.options.includes(value)) errors.push(`${f.label} tidak valid.`);
    if (!f.options && (Array.from(value).length > f.max || (['textarea', 'rich'].includes(f.type) && Buffer.byteLength(value) > f.max))) errors.push(`${f.label} terlalu panjang.`);
+   if (f.pattern && value && !new RegExp(f.pattern).test(value)) errors.push(`${f.label} tidak valid.`);
    if (f.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number(value.slice(0,4)) < 1000 || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value)) errors.push(`${f.label} tidak valid.`);
    const clean = f.type === 'rich' ? sanitize(value, richOptions) : value;
    if (f.type === 'rich' && f.required && !sanitize(clean, { allowedTags: [], allowedAttributes: {} }).trim()) errors.push(`${f.label} wajib diisi.`);
@@ -97,7 +104,7 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
   if (['import', 'template'].includes(action) && !config.importable) return message(404, 'Halaman tidak ditemukan.');
   if (!has(access, config, permission)) return message(403, 'Anda tidak memiliki izin untuk tindakan ini.');
   if (['edit', 'view', 'delete', 'file', 'download'].includes(action) && !validId(id)) return message(404, 'Data tidak ditemukan.');
-  if (action === 'import' && resource === 'nama-kota' && !has(access, config, 'update')) return message(403, 'Impor kota memerlukan izin tambah dan ubah.');
+  if (action === 'import' && ['nama-kota','santri',...Object.keys(diplomaResources)].includes(resource) && !has(access, config, 'update')) return message(403, 'Impor memerlukan izin tambah dan ubah.');
   if (['convert', 'conversion-template'].includes(action) && !config.convertible) return message(404, 'Halaman tidak ditemukan.');
   if (action === 'convert' && !has(access, config, 'view_any')) return message(403, 'Konversi memerlukan izin daftar dan tambah kamus.');
   if (action === 'template' || action === 'conversion-template') {
@@ -112,9 +119,17 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
   let saved = false, transaction = false;
   try {
    if (['create','edit'].includes(action) && data) { await c.beginTransaction(); transaction = true; }
+   if(resource==='cbt-ujian' && !verificationFilters.includes(data?.verification || params.get('verification') || 'verified_only'))return message(422,'Filter verifikasi tidak valid.');
+   let initialRow;
+   if(config.preserveRelated && ['edit','view'].includes(action)){const [rows]=await c.execute(`SELECT * FROM ${config.table} WHERE id=?${transaction?' FOR UPDATE':''}`,[id]);if(!rows.length)return message(404,'Data tidak ditemukan.');initialRow=rows[0];}
+   const choiceQueries=new Map();
    config = { ...config, fields: await Promise.all(config.fields.map(async f => {
     if (!f.relation) return f;
-    const [choices] = await c.execute(`SELECT id,\`${f.relation.column}\` AS label FROM ${f.relation.table} WHERE ${f.relation.active || '1=1'} ORDER BY \`${f.relation.column}\``);
+    if(action==='list' && config.listFields && !config.listFields.includes(f.key) && !config.filterFields?.includes(f.key))return f;
+    const sql=`SELECT id,${f.relation.labelSql || '`'+f.relation.column+'`'} AS label FROM ${f.relation.table} WHERE ${typeof f.relation.active==='function'?f.relation.active({data,params}):f.relation.active || '1=1'} ORDER BY \`${f.relation.column}\``;
+    if(!choiceQueries.has(sql))choiceQueries.set(sql,c.execute(sql));
+    let [choices]=await choiceQueries.get(sql);choices=[...choices];
+    if(initialRow?.[f.key] && !choices.some(choice=>String(choice.id)===String(initialRow[f.key]))){const [previous]=await c.execute(`SELECT id,\`${f.relation.column}\` AS label FROM ${f.relation.table} WHERE id=?`,[initialRow[f.key]]);if(previous.length)choices.push({id:previous[0].id,label:String(previous[0].label)+' [tersimpan]'});}
     return { ...f, options:choices.map(r => String(r.id)), labels:Object.fromEntries(choices.map(r => [String(r.id),r.label])) };
    })) };
    if (action === 'file' || action === 'download') {
@@ -130,23 +145,26 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
    if (action === 'convert') return await convertNamesWorkbook({ c, data, message });
    if (action === 'import') {
     if (!data) return message(405, 'Metode tidak tersedia.');
-    return await importMaster({ c, resource, config, data, validate: validateMaster, colors: calendarColors, message });
+    return await importMaster({ c, resource, config, data, validate: validateMaster, colors: calendarColors, message, user });
    }
    if (action === 'list') {
     params = new URLSearchParams(params);
     if (config.defaultDirection && !params.has('direction')) params.set('direction', config.defaultDirection);
     if (config.undefinedFilter && !params.has('undefined')) params.set('undefined', '1');
     const query = tableQuery(params, { sorts: config.sorts, defaultSort: config.sorts[0] });
-    const definitions = config.fields.filter(f => f.options && !f.relation).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: f.labels?.[value] ?? optionLabel(f, value) })) }));
+    const definitions = config.fields.filter(f => f.options && (config.filterFields ? config.filterFields.includes(f.key) : !f.relation)).map(f => ({ name: f.key, label: f.label, options: f.options.map(value => ({ value, label: f.labels?.[value] ?? optionLabel(f, value) })) }));
+    definitions.push(...(config.extraFilters || []));
     if (config.undefinedFilter) definitions.push({ name: 'undefined', label: 'Nama Arab', options: [{ value: '1', label: 'Belum Terdefinisi' }, { value: '0', label: 'Semua Nama' }] });
     const filters = tableFilters(params, definitions);
     if (!query || !filters) return message(422, 'Pencarian, filter, urutan, atau halaman tidak valid.');
-    const where = [active, `(${config.search.map(key => `\`${key}\` LIKE ? ESCAPE '!'`).join(' OR ')})`];
+    const where = [active, `(${(config.searchExpressions || config.search.map(key=>'`'+key+'`')).map(expression=>`${expression} LIKE ? ESCAPE '!'`).join(' OR ')})`];
     const args = config.search.map(() => query.pattern);
     if (filters.undefined === '1') where.push("nama_arab LIKE '%belum terdefinisi%'");
     for (const [key, value] of Object.entries(filters)) if (value && key !== 'undefined') { where.push(`\`${key}\`=?`); args.push(value); }
-    const [rows] = await c.execute(`SELECT *${config.count ? `,(SELECT COUNT(*) FROM ${config.count.table} WHERE ${config.count.key}=${config.table}.id) AS related_count` : ''},COUNT(*) OVER() AS table_total FROM ${config.table} WHERE ${where.join(' AND ')} ORDER BY \`${query.sort}\` ${query.direction.toUpperCase()},id LIMIT ${params.has('export') ? 10001 : query.limit} OFFSET ${params.has('export') ? 0 : query.offset}`, args);
-    const columns = config.fields.filter(f => !['textarea', 'rich', 'file'].includes(f.type)).map(f => ({ key: f.key, label: f.label, ...(f.options ? { value: row => f.labels?.[String(row[f.key])] ?? optionLabel(f, String(row[f.key])) } : {}) }));
+    const [rows] = await c.execute(`SELECT *${config.count ? `,(SELECT COUNT(*) FROM ${config.count.table} WHERE ${config.count.key}=${config.table}.id) AS related_count` : ''},COUNT(*) OVER() AS table_total FROM ${config.table} WHERE ${where.join(' AND ')} ORDER BY ${config.sortSql?.[query.sort] || '`'+query.sort+'`'} ${query.direction.toUpperCase()},id LIMIT ${params.has('export') ? 10001 : query.limit} OFFSET ${params.has('export') ? 0 : query.offset}`, args);
+    if(config.hydrateRows)await config.hydrateRows(c,rows);
+    const columns = config.fields.filter(f => (!['textarea', 'rich', 'file'].includes(f.type) || config.listTextFields?.includes(f.key)) && (!config.listFields || config.listFields.includes(f.key) || config.listTextFields?.includes(f.key))).map(f => ({ key: f.key, label: f.label, ...(f.options ? { value: row => f.labels?.[String(row[f.key])] ?? optionLabel(f, String(row[f.key])) } : {}) }));
+    columns.push(...(config.computedColumns || []));
     let authors = {};
     if (config.author && rows.length) {
      const ids = [...new Set(rows.map(row => row.penulis_id))];
@@ -158,15 +176,16 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
     if (config.count) columns.push({ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label });
     columns.push({ key: 'created_at', label: 'Dibuat', value: row => stamp(row.created_at) }, { key: 'updated_at', label: 'Diperbarui', value: row => stamp(row.updated_at) });
     if (config.softDelete) columns.push({ key: 'deleted_at', label: 'Dihapus', value: row => stamp(row.deleted_at) });
-    const exportColumns = [...config.fields.map(f => ({ key: f.key, label: f.label })), ...(config.count ? [{ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label }] : []), ...columns.filter(col => [...(config.extraColumns || []),'created_at', 'updated_at', 'deleted_at'].includes(col.key))];
+    const exportColumns = [...(config.computedColumns || []),...config.fields.map(f => ({ key: f.key, label: f.label })), ...(config.count ? [{ key: 'id', label: 'ID' }, { key: 'related_count', label: config.count.label }] : []), ...columns.filter(col => [...(config.extraColumns || []),'created_at', 'updated_at', 'deleted_at'].includes(col.key))];
     const exported = await tableExport(params, rows, exportColumns, config.title);
     if (exported) return exported;
-    if (has(access, config, 'update') || (config.view && has(access, config, 'view')) || (config.singleDelete && has(access, config, 'delete'))) columns.push({ label: 'Aksi', html: row => tableRowActions([
+    if (config.extraActions || has(access, config, 'update') || (config.view && has(access, config, 'view')) || (config.singleDelete && has(access, config, 'delete'))) columns.push({ label: 'Aksi', html: row => tableRowActions([
      ...(has(access, config, 'update') ? [{ label: config.statusOnly ? 'Ubah Status' : 'Edit', href: `${base}/${row.id}/edit` }] : []),
      ...(config.view && has(access, config, 'view') ? [{ label: 'Detail', href: `${base}/${row.id}/view` }] : []),
      ...(config.singleDelete && has(access, config, 'delete') ? [{ label: 'Hapus', href: `${base}/${row.id}/delete` }] : [])
+     ,...(config.extraActions ? config.extraActions(row,access) : [])
     ]) });
-    return { status: 200, title: config.title, body: `<section>${config.convertible && has(access, config, 'create') ? `<p><a href="${base}/conversion-template">Template konversi nama</a></p><form class="master-convert" method="post" action="${base}/convert" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Konversi batch Latin ke Arab (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Unduh hasil konversi</button></form>` : ''}${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${resource !== 'nama-kota' || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key)?.label || key).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') ? { action: `${base}/delete`, csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Data dihapus secara lunak.' : '' } : null })}</section>` };
+    return { status: 200, title: config.title, body: `<section>${config.listIntro ? config.listIntro({access,csrf}).replaceAll('__CSRF__',esc(csrf)) : ''}${config.convertible && has(access, config, 'create') ? `<p><a href="${base}/conversion-template">Template konversi nama</a></p><form class="master-convert" method="post" action="${base}/convert" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Konversi batch Latin ke Arab (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Unduh hasil konversi</button></form>` : ''}${config.importable && has(access, config, 'create') ? `<p><a href="${base}/template">Unduh template Excel</a></p>${!['nama-kota','santri',...Object.keys(diplomaResources)].includes(resource) || has(access, config, 'update') ? `<form class="master-import" method="post" action="${base}/import" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="${esc(csrf)}"><label>Impor Excel (.xlsx, maksimal 1 MB / 1.000 baris)<input type="file" name="workbook" accept=".xlsx" required></label><button type="submit">Impor</button></form>` : ''}` : ''}${has(access, config, 'create') ? `<p class="table-create"><a href="${base}/create">Tambah ${esc(config.title)}</a></p>` : ''}${renderTable({ base, query, rows, columns, title: config.title, searchLabel: 'Cari ' + config.search.map(key => config.fields.find(f => f.key === key)?.label || key).join(' / '), emptyText: 'Tidak ada data yang cocok.', sortOptions: config.sorts.map(value => ({ value, label: columns.find(col => col.key === value)?.label || value })), filters: definitions.map(f => ({ ...f, value: filters[f.name] })), exportable: true, bulk: has(access, config, 'delete_any') || config.extraBulk ? { action: `${base}/delete`, actions: [...(has(access, config, 'delete_any') ? [{ label: 'Hapus yang dipilih', action: `${base}/delete` }] : []),...(config.extraBulk ? config.extraBulk(access) : [])], csrf, rowLabel: row => row[config.fields[0].key], confirm: 'Hapus data yang dipilih? Tindakan ini memerlukan konfirmasi.', notice: config.related ? 'Data yang masih digunakan tidak dapat dihapus.' : config.softDelete ? 'Data dihapus secara lunak.' : '' } : null })}</section>` };
    }
    if (action === 'bulkDelete' || action === 'delete') {
     if (!data) {
@@ -182,30 +201,37 @@ export function createDashboardMasters(db = pool, uploadRoot = contentRoot) {
     try {
      const [locked] = await c.execute(`SELECT id FROM ${config.table} WHERE id IN (${placeholders}) AND ${active} FOR UPDATE`, ids);
      if (locked.length !== ids.length) { await c.rollback(); return message(404, 'Sebagian data tidak ditemukan. Muat ulang daftar.'); }
+     if(config.relatedCheck && await config.relatedCheck(c,ids)){await c.rollback();return message(422,'Data masih dipakai pada ujian. Lepaskan relasinya sebelum menghapus.');}
      for (const [table, foreignKey] of config.related || []) {
       const [related] = await c.execute(`SELECT id FROM ${table} WHERE ${foreignKey} IN (${placeholders}) LIMIT 1`, ids);
       if (related.length) { await c.rollback(); return message(422, 'Data masih digunakan. Lepaskan relasinya sebelum menghapus.'); }
      }
+     for (const [table,foreignKey] of config.deleteChildren || []) await c.execute(`DELETE FROM ${table} WHERE ${foreignKey} IN (${placeholders})`,ids);
      await c.execute(config.softDelete ? `UPDATE ${config.table} SET deleted_at=NOW(),updated_at=NOW() WHERE id IN (${placeholders}) AND ${active}` : `DELETE FROM ${config.table} WHERE id IN (${placeholders})`, ids);
      await c.commit();
     } catch (error) { await c.rollback(); throw error; }
     return { status: 303 };
    }
-   let row = {};
-   if (action !== 'create') {
+   let row = initialRow || {};
+   if (action !== 'create' && !initialRow) {
     const [rows] = await c.execute(`SELECT * FROM ${config.table} WHERE id=? AND ${active}${transaction ? ' FOR UPDATE' : ''}`, [id]);
     if (!rows.length) return message(404, 'Data tidak ditemukan.');
     row = rows[0];
    }
    if (action === 'view') return { status: 200, title: config.title, body: `<section><dl>${config.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${f.type === 'rich' ? sanitize(String(row[f.key] || ''), richOptions) : f.type === 'file' && row[f.key] ? `<a href="${base}/${id}/file">Buka berkas</a>` : esc(f.labels?.[row[f.key]] ?? row[f.key])}</dd>`).join('')}</dl>${has(access, config, 'update') ? `<a href="${base}/${id}/edit">Edit</a> · ` : ''}<a href="${base}">Kembali ke daftar</a></section>` };
-   if (!data) return form(config, base, row, action, csrf);
+   if (!data) return form(config, base, row, action, csrf, [], row, params);
    const fields = config.statusOnly && action === 'edit' ? config.fields.filter(f => f.key === 'status') : config.fields;
    const { values, errors } = validateMaster(fields, data);
+   if(config.validateExtra)errors.push(...await config.validateExtra({c,values,row,user,data}));
+   if(config.prepareValues && !errors.length)errors.push(...await config.prepareValues({c,resource,values,row,action,user}));
+   if(config.createdBy && action==='create'){if(!validId(user?.id))errors.push('Akun pembuat tidak valid.');else values.created_by=user.id;}
    const fileField = fields.find(f => f.type === 'file');
    if (fileField && fileField.required && !row[fileField.key] && !data.upload?.length) errors.push(`${fileField.label} wajib diisi.`);
    if (errors.length) return form(config, base, row, action, csrf, errors, data);
    for (const f of fields.filter(f => f.relation)) {
-    const [related] = await c.execute(`SELECT id FROM ${f.relation.table} WHERE id=? AND ${f.relation.active || '1=1'} FOR SHARE`, [values[f.key]]);
+    if (!values[f.key] && !f.required) continue;
+    if(config.preserveRelated && String(values[f.key])===String(row[f.key]))continue;
+    const [related] = await c.execute(`SELECT id FROM ${f.relation.table} WHERE id=? AND ${typeof f.relation.active==='function'?f.relation.active({data,params}):f.relation.active || '1=1'} FOR SHARE`, [values[f.key]]);
     if (!related.length) return form(config,base,row,action,csrf,[`${f.label} tidak tersedia. Muat ulang pilihan.`],data);
    }
    if (config.author && action === 'create') values.penulis_id = user.id;

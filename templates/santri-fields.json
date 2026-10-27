@@ -1,0 +1,579 @@
+[
+  {
+    "key": "nama",
+    "label": "Nama",
+    "required": true,
+    "max": 255
+  },
+  {
+    "key": "nama_arab",
+    "label": "Nama Arab",
+    "required": true,
+    "max": 255
+  },
+  {
+    "key": "jenis_kelamin",
+    "label": "Jenis Kelamin",
+    "required": true,
+    "max": 255
+  },
+  {
+    "key": "nis",
+    "label": "Nis",
+    "required": true,
+    "max": 255
+  },
+  {
+    "key": "nis_darul_ilmi",
+    "label": "Nis Darul Ilmi",
+    "required": false,
+    "max": 10
+  },
+  {
+    "key": "tempat_lahir",
+    "label": "Tempat Lahir",
+    "required": true,
+    "max": 80
+  },
+  {
+    "key": "tanggal_lahir",
+    "label": "Tanggal Lahir",
+    "required": true,
+    "max": 80
+  },
+  {
+    "key": "bulan_lahir",
+    "label": "Bulan Lahir",
+    "required": true,
+    "max": 80
+  },
+  {
+    "key": "tahun_lahir",
+    "label": "Tahun Lahir",
+    "required": true,
+    "max": 80
+  },
+  {
+    "key": "jenjang",
+    "label": "Jenjang",
+    "required": true,
+    "max": 80
+  },
+  {
+    "key": "agama",
+    "label": "Agama",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "alamat",
+    "label": "Alamat",
+    "required": false,
+    "max": 120
+  },
+  {
+    "key": "anak_ke",
+    "label": "Anak Ke",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "asal_sekolah",
+    "label": "Asal Sekolah",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "berat_badan",
+    "label": "Berat Badan",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "berkebutuhan_khusus",
+    "label": "Berkebutuhan Khusus",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "berkebutuhan_khusus_ayah",
+    "label": "Berkebutuhan Khusus Ayah",
+    "required": true,
+    "max": 255,
+    "type": "boolean",
+    "options": [
+      "0",
+      "1"
+    ],
+    "default": "0"
+  },
+  {
+    "key": "berkebutuhan_khusus_ibu",
+    "label": "Berkebutuhan Khusus Ibu",
+    "required": true,
+    "max": 255,
+    "type": "boolean",
+    "options": [
+      "0",
+      "1"
+    ],
+    "default": "0"
+  },
+  {
+    "key": "catatan",
+    "label": "Catatan",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "email",
+    "label": "Email",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "hobi",
+    "label": "Hobi",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "jarak_ke_sekolah",
+    "label": "Jarak Ke Sekolah",
+    "required": false,
+    "max": 255,
+    "pattern": "^-?\\d{1,6}(?:\\.\\d{1,2})?$"
+  },
+  {
+    "key": "jalur",
+    "label": "Jalur",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "jumlah_nilai",
+    "label": "Jumlah Nilai",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "jumlah_saudara_kandung",
+    "label": "Jumlah Saudara Kandung",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "kecamatan",
+    "label": "Kecamatan",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "kewarganegaraan",
+    "label": "Kewarganegaraan",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "kode_pos",
+    "label": "Kode Pos",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "latitude",
+    "label": "Latitude",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "longitude",
+    "label": "Longitude",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "moda_transportasi",
+    "label": "Moda Transportasi",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_ayah",
+    "label": "Nama Ayah",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_dusun",
+    "label": "Nama Dusun",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_kelurahan",
+    "label": "Nama Kelurahan",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_peserta",
+    "label": "Nama Peserta",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_ibu",
+    "label": "Nama Ibu",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_tertera_di_kip",
+    "label": "Nama Tertera Di Kip",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nama_wali",
+    "label": "Nama Wali",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nisn",
+    "label": "Nisn",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nik",
+    "label": "Nik",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nik_ayah",
+    "label": "Nik Ayah",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nik_ibu",
+    "label": "Nik Ibu",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "nik_wali",
+    "label": "Nik Wali",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_kk",
+    "label": "No Kk",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_kks",
+    "label": "No Kks",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_kip",
+    "label": "No Kip",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_kps_pkh",
+    "label": "No Kps Pkh",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_pendaftaran",
+    "label": "No Pendaftaran",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_registrasi_akta_lahir",
+    "label": "No Registrasi Akta Lahir",
+    "required": false,
+    "max": 80
+  },
+  {
+    "key": "no_seri_ijazah",
+    "label": "No Seri Ijazah",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "no_seri_skhu",
+    "label": "No Seri Skhu",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "no_un",
+    "label": "No Un",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "no_telepon_rumah",
+    "label": "No Telepon Rumah",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "nomor_hp",
+    "label": "Nomor Hp",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "pendidikan_ayah",
+    "label": "Pendidikan Ayah",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "pendidikan_ibu",
+    "label": "Pendidikan Ibu",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "pendidikan_wali",
+    "label": "Pendidikan Wali",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "penerima_kip",
+    "label": "Penerima Kip",
+    "required": true,
+    "max": 255,
+    "type": "boolean",
+    "options": [
+      "0",
+      "1"
+    ],
+    "default": "0"
+  },
+  {
+    "key": "penerima_kps_pkh",
+    "label": "Penerima Kps Pkh",
+    "required": true,
+    "max": 255,
+    "type": "boolean",
+    "options": [
+      "0",
+      "1"
+    ],
+    "default": "0"
+  },
+  {
+    "key": "pekerjaan_ayah",
+    "label": "Pekerjaan Ayah",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "pekerjaan_ibu",
+    "label": "Pekerjaan Ibu",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "pekerjaan_wali",
+    "label": "Pekerjaan Wali",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "penghasilan_bulanan_ayah",
+    "label": "Penghasilan Bulanan Ayah",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "penghasilan_bulanan_ibu",
+    "label": "Penghasilan Bulanan Ibu",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "penghasilan_bulanan_wali",
+    "label": "Penghasilan Bulanan Wali",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "poin_jarak",
+    "label": "Poin Jarak",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "poin_prestasi",
+    "label": "Poin Prestasi",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "rt",
+    "label": "Rt",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "rw",
+    "label": "Rw",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "status",
+    "label": "Status",
+    "required": true,
+    "max": 255,
+    "options": [
+      "calon santri",
+      "tidak lolos tes seleksi",
+      "santri",
+      "lulus",
+      "di keluarkan"
+    ]
+  },
+  {
+    "key": "status_daftar_ulang",
+    "label": "Status Daftar Ulang",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "status_hasil",
+    "label": "Status Hasil",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "tanggal_daftar",
+    "label": "Tanggal Daftar",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "tempat_tinggal",
+    "label": "Tempat Tinggal",
+    "required": false,
+    "max": 255
+  },
+  {
+    "key": "terima_fisik_kartu_kip",
+    "label": "Terima Fisik Kartu Kip",
+    "required": true,
+    "max": 255,
+    "type": "boolean",
+    "options": [
+      "0",
+      "1"
+    ],
+    "default": "0"
+  },
+  {
+    "key": "tinggi_badan",
+    "label": "Tinggi Badan",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "usia",
+    "label": "Usia",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "tahun",
+    "label": "Tahun",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "tahun_lahir_ayah",
+    "label": "Tahun Lahir Ayah",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "tahun_lahir_ibu",
+    "label": "Tahun Lahir Ibu",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "tahun_lahir_wali",
+    "label": "Tahun Lahir Wali",
+    "required": false,
+    "max": 2147483647,
+    "type": "number",
+    "min": -2147483648
+  },
+  {
+    "key": "kelas_id",
+    "label": "Kelas - Program Pendidikan",
+    "required": true,
+    "max": 15,
+    "relation": {
+      "table": "kelas",
+      "column": "nama_kelas",
+      "labelSql": "CONCAT(nama_kelas,' - ',COALESCE((SELECT nama_program FROM program_pendidikans WHERE id=kelas.id_program_pendidikan),''))"
+    }
+  },
+  {
+    "key": "pengampu_tahfizh_id",
+    "label": "Pengampu Tahfizh",
+    "required": false,
+    "max": 15,
+    "relation": {
+      "table": "users",
+      "column": "name"
+    }
+  }
+]

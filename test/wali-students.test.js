@@ -30,10 +30,13 @@ test('SQL wali: pencarian literal, pagination dan isolasi KK pada tabel TEMPORAR
  const c=await pool.getConnection();
  try{
  await c.query('CREATE TEMPORARY TABLE santris (id BIGINT PRIMARY KEY, no_kk VARCHAR(16), nama VARCHAR(255), nama_arab VARCHAR(255), jenjang VARCHAR(255), status VARCHAR(255), nomor_pendaftaran VARCHAR(255), nisn VARCHAR(20), tempat_lahir VARCHAR(255), tanggal_lahir INT, bulan_lahir INT, tahun_lahir INT)');
+ await c.query('CREATE TEMPORARY TABLE foto_santris (id BIGINT PRIMARY KEY,santri_id BIGINT,path VARCHAR(255))');
  const students=createWaliStudents(async(sql,args)=>(await c.execute(sql,args))[0]);
  await c.execute('INSERT INTO santris(id,no_kk,nama) VALUES(1,?,?),(2,?,?)',[user.nomor_kk,'<script>100%</script>','2222222222222222','Rahasia']);
  for(let id=3;id<=23;id++)await c.execute('INSERT INTO santris(id,no_kk,nama) VALUES(?,?,?)',[id,user.nomor_kk,'Z Santri '+id]);
  await c.execute("UPDATE santris SET jenjang='Madrasah',status='aktif' WHERE id=1");
+ await c.execute("INSERT INTO foto_santris VALUES(1,1,'fixture.jpg')");
+ const actions=await students(user,{permissions:[...access.permissions,'update_santri::wali','create_santri::wali']},params);assert.match(actions.body,/santri-wali\/1\/edit/);assert.match(actions.body,/santri-wali\/create/);assert.match(actions.body,/santri-wali\/1\/berkas\/foto/);assert.doesNotMatch(actions.body,/fixture.jpg/);
  const list=await students(user,access,params);assert.equal(list.status,200);assert.match(list.body,/&lt;script&gt;/);assert.doesNotMatch(list.body,/Rahasia/);assert.match(list.body,/Selanjutnya/);
  const next=await students(user,access,new URLSearchParams('page=2'));assert.match(next.body,/Sebelumnya/);assert.doesNotMatch(next.body,/Selanjutnya/);
  const literal=await students(user,access,new URLSearchParams('q=%'));assert.match(literal.body,/100%/);assert.doesNotMatch(literal.body,/Z Santri/);
@@ -46,6 +49,6 @@ test('SQL wali: pencarian literal, pagination dan isolasi KK pada tabel TEMPORAR
  assert.equal((await students(user,{permissions:[]},new URLSearchParams('export=xlsx'))).status,403);
  assert.equal((await students(user,access,params,'1')).status,200);
  for(const id of ['2','999'])assert.equal((await students(user,access,params,id)).status,404);
- }finally{await c.query('DROP TEMPORARY TABLE IF EXISTS santris');c.release();}
+ }finally{await c.query('DROP TEMPORARY TABLE IF EXISTS foto_santris');await c.query('DROP TEMPORARY TABLE IF EXISTS santris');c.release();}
 });
 test.after(()=>pool.end());

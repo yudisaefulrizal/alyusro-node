@@ -1,3 +1,9 @@
+import { diplomas, diplomaRoute } from './diplomas.js';
+import { cbtAdmin, cbtAdminRoute } from './cbt-admin.js';
+import { cbtRuntime, cbtRuntimeRoute } from './cbt-runtime.js';
+import { studentsAdmin, studentsAdminRoute } from './students-admin.js';
+import { adminResources, adminRoute } from './admin-resources.js';
+import { runAudit, auditActor } from './audit.js';
 import { masterResources, dashboardMasters, masterRoute } from './dashboard-masters.js';
 import { candidates } from './candidates.js';
 import { admissionsAdmin } from './admissions-admin.js';
@@ -32,7 +38,7 @@ export async function verifyPassword(value,encoded) {
 const dummyHash=bcrypt.hashSync('nonexistent-account-dummy-password',12);
 class FormError extends Error { constructor(message,status=422){super(message);this.status=status;} }
 async function readForm(req, maxEncodedSize=16384, fileField='avatar', contentUpload=false, masterForm=false) {
-  const max=contentUpload?11534336:1100000;let size=0;const chunks=[];
+  const max=contentUpload?11534336:Math.max(1100000,maxEncodedSize);let size=0;const chunks=[];
   for await(const chunk of req){size+=chunk.length;if(size>max)throw new FormError('Data terlalu besar.',413);chunks.push(chunk);}
   const buffer=Buffer.concat(chunks);
   if(req.headers['content-type']?.startsWith('application/x-www-form-urlencoded')) {
@@ -54,10 +60,10 @@ async function readForm(req, maxEncodedSize=16384, fileField='avatar', contentUp
   }
   throw new FormError('Format formulir tidak didukung.',415);
 }
-export function createAuthHandler({store=authStore,students=waliStudents,editStudent=waliEdit,registerStudent=waliRegistration,wali=waliWidget,files=waliFiles,documents=waliDocuments,notes=statusNotes,referrals=referralSources,admissionsAdminHandler=admissionsAdmin,candidatesHandler=candidates,masters=dashboardMasters,stats=dashboardStats,admissions=admissionStats,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
+export function createAuthHandler({store=authStore,students=waliStudents,editStudent=waliEdit,registerStudent=waliRegistration,wali=waliWidget,files=waliFiles,documents=waliDocuments,notes=statusNotes,referrals=referralSources,admissionsAdminHandler=admissionsAdmin,candidatesHandler=candidates,admin=adminResources,studentAdmin=studentsAdmin,cbt=cbtRuntime,cbtManagement=cbtAdmin,diploma=diplomas,masters=dashboardMasters,stats=dashboardStats,admissions=admissionStats,sendMail=sendResetMail,now=()=>Math.floor(Date.now()/1000),sessionMinutes=Number(process.env.NODE_AUTH_SESSION_MINUTES||43200),auditEnabled=store===authStore,secure=process.env.NODE_AUTH_SECURE_COOKIE==='true',uploadRoot=new URL('../storage/uploads/',import.meta.url)}={}) {
   const cookieName=secure?'__Host-alyusro_node_session':'alyusro_node_session';
   const duration=s=>s.user_id?(s.remember?400*86400:sessionMinutes*60):3600;
-  return async function handleAuth(req,res,path) {
+  return function handleAuth(req,res,path) { return runAudit({enabled:auditEnabled,ip:req.socket.remoteAddress,userAgent:String(req.headers['user-agent'] || '')},async()=>{
     if(path!=='/dashboard'&&!path.startsWith('/dashboard/'))return false;
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Robots-Tag','noindex, nofollow');
     const send=(status,body,type='text/html; charset=utf-8')=>{res.writeHead(status,{'Content-Type':type});res.end(req.method==='HEAD'?undefined:body);return true;};
@@ -73,7 +79,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
       s.expires_at=now()+duration(s);await store.putSession(s);if(previous)await store.deleteSession(previous.id);setCookie(raw);
     };
     const page=async(view,message='',status=200,details={})=>send(status,authPage(view,s,user,access,message,status,details));
-    const moduleResult=(result,filename)=>{if(result.content!==undefined){res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"sandbox; default-src 'none'");res.setHeader('Content-Disposition',`${result.attachment?'attachment':'inline'}; filename="${String(result.filename).replace(/[^a-zA-Z0-9._-]/g,'_')}"; filename*=UTF-8''${encodeURIComponent(result.filename)}`);return send(result.status,result.content,result.type);}if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}if(result.zip!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.zip"`);return send(200,result.zip,'application/zip');}return page(path,'',result.status,{module:result});};
+    const moduleResult=(result,filename)=>{if(result.json!==undefined)return send(result.status,JSON.stringify(result.json),'application/json');if(result.content!==undefined){res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"sandbox; default-src 'none'");res.setHeader('Content-Disposition',`${result.attachment?'attachment':'inline'}; filename="${String(result.filename).replace(/[^a-zA-Z0-9._-]/g,'_')}"; filename*=UTF-8''${encodeURIComponent(result.filename)}`);return send(result.status,result.content,result.type);}if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}if(result.zip!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.zip"`);return send(200,result.zip,'application/zip');}return page(path,'',result.status,{module:result});};
     try {
       if(!['GET','HEAD','POST'].includes(req.method))return send(405,'Metode tidak tersedia.','text/plain');
       if(cookie&&/^[a-f0-9]{64}$/.test(cookie))s=await store.session(hash(cookie));
@@ -82,7 +88,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(!await store.rate(hash('session|'+ip),120))return send(429,'Terlalu banyak permintaan. Coba lagi sebentar.','text/plain');
         await fresh();
       }
-      if(user)access=await store.access(user.id);
+      if(user){access=await store.access(user.id);auditActor(user.id);}
       const publicPaths=['/dashboard/login','/dashboard/register','/dashboard/password-reset/request','/dashboard/password-reset/reset'];
       if(!user&&!publicPaths.includes(path))return redirect('/dashboard/login');
       if(user&&publicPaths.includes(path))return redirect('/dashboard');
@@ -95,6 +101,15 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
           if(!file.startsWith(root+sep)||!/^fotoProfil\//.test(user.avatar_url)||!['.png','.jpg','.jpeg','.webp'].includes(extname(file).toLowerCase()))return send(404,'Foto tidak ditemukan.','text/plain');
           const image=await sharp(await readFile(file),{limitInputPixels:16000000}).rotate().resize(512,512,{fit:'inside',withoutEnlargement:true}).webp().toBuffer();return send(200,image,'image/webp');
         }
+        const diplomaPage=diplomaRoute(path);
+        if(diplomaPage){const result=await diploma({...diplomaPage,user,access,csrf:s.csrf});return moduleResult(result,diplomaPage.resource);}
+        const examPage=cbtRuntimeRoute(path),cbtPage=cbtAdminRoute(path);
+        if(examPage){if(['start','save','submit'].includes(examPage.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await cbt({...examPage,user,csrf:s.csrf});return result.status===303?redirect(result.redirect):moduleResult(result,'ujian');}
+        if(cbtPage){const result=await cbtManagement({...cbtPage,user,access,csrf:s.csrf});return moduleResult(result,'cbt');}
+        const studentPage=studentsAdminRoute(path);
+        if(studentPage){if(studentPage.action==='file'){if(studentPage.fileAction!=='read')return send(405,'Metode tidak tersedia.','text/plain');const result=await files({user,access,id:studentPage.id,field:studentPage.field,scope:'admin'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}const result=await studentAdmin({...studentPage,user,access,csrf:s.csrf});return moduleResult(result,'santri');}
+        const adminPage=adminRoute(path);
+        if(adminPage){const result=await admin({...adminPage,user,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,adminPage.resource);}
         const masterPage=masterRoute(path);
         if(masterPage){const result=await masters({...masterPage,user,access,params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,masterPage.resource);}
         const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
@@ -127,7 +142,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         return page(path,'',['/dashboard',...publicPaths].includes(path)?200:404);
       }
       const route=masterRoute(path), contentUpload=!!route && masterResources[route.resource].fields.some(f=>f.type==='file');
-      const data=await readForm(req,route?1000000:16384,['import','convert'].includes(route?.action)?'workbook':contentUpload?'upload':'avatar',contentUpload,!!route);formData=data;
+      const data=await readForm(req,cbtRuntimeRoute(path)?5242880:route||adminRoute(path)||cbtAdminRoute(path)||diplomaRoute(path)?1000000:16384,['import','convert'].includes(route?.action)?'workbook':contentUpload?'upload':'avatar',contentUpload,!!route);formData=data;
       if(!equal(data._csrf,s.csrf))throw new FormError('Sesi formulir kedaluwarsa. Muat ulang halaman dan coba lagi.',403);
       const origin=req.headers.origin;
       const allowedOrigin=process.env.NODE_AUTH_PUBLIC_URL ? new URL(process.env.NODE_AUTH_PUBLIC_URL).origin : `${secure?'https':'http'}://${req.headers.host}`;
@@ -159,6 +174,15 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         if(!await store.reset(data.email,hash(data.token),await bcrypt.hash(data.password,12),token()))throw new FormError('Tautan reset tidak valid atau sudah kedaluwarsa.');
         return redirect('/dashboard/login');
       }
+      const diplomaAction=diplomaRoute(path);
+      if(diplomaAction){if(['print','transcript','qr'].includes(diplomaAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await diploma({...diplomaAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(result.redirect):moduleResult(result,diplomaAction.resource);}
+      const examAction=cbtRuntimeRoute(path),cbtAction=cbtAdminRoute(path);
+      if(examAction){if(!['start','save','submit'].includes(examAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await cbt({...examAction,user,csrf:s.csrf,data});return result.status===303?redirect(result.redirect):moduleResult(result,'ujian');}
+      if(cbtAction){if(cbtAction.action==='results')return send(405,'Metode tidak tersedia.','text/plain');const result=await cbtManagement({...cbtAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(result.redirect || '/dashboard/cbt-soal'):moduleResult(result,'cbt');}
+      const studentAction=studentsAdminRoute(path);
+      if(studentAction){if(studentAction.action==='file'){if(studentAction.fileAction==='read')return send(405,'Metode tidak tersedia.','text/plain');const result=await files({user,access,id:studentAction.id,field:studentAction.field,scope:'admin',action:studentAction.fileAction,image:data.avatar});return result.status===303?redirect(`/dashboard/santri/${studentAction.id}/documents`):send(result.status,'Berkas tidak dapat diproses.','text/plain');}if(['card','documents'].includes(studentAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await studentAdmin({...studentAction,user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard/santri'):moduleResult(result,'santri');}
+      const adminAction=adminRoute(path);
+      if(adminAction){if(['list','view'].includes(adminAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await admin({...adminAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${adminAction.resource}`):moduleResult(result,adminAction.resource);}
       const masterAction=masterRoute(path);
       if(masterAction){if(['list','view','template','conversion-template','file','download'].includes(masterAction.action))return send(405,'Metode tidak tersedia.','text/plain');const result=await masters({...masterAction,user,access,csrf:s.csrf,data});return result.status===303?redirect(`/dashboard/${masterAction.resource}`):moduleResult(result,masterAction.resource);}
       if(path==='/dashboard/santri-wali/create'){const result=await registerStudent({user,access,csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
@@ -223,6 +247,6 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
       if(!s)return send(503,'Layanan autentikasi belum siap.','text/plain');
       return page(destination,message,error instanceof FormError?error.status:error.code==='ER_DUP_ENTRY'?422:503,{email:formData.email,token:formData.token,...(destination==='/dashboard'&&user?{wali:await wali(user,access,s.csrf)}:{})});
     }
-  };
+  });};
 }
 export const handleAuth=createAuthHandler();

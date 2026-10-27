@@ -13,7 +13,7 @@ export function nameParts(name) {
  return parts;
 }
 
-export async function convertNamesWorkbook({ c, data, message }) {
+export async function convertNamesWorkbook({ c, data, message, headerAlias=false }) {
  const invalid = text => message(422, text);
  if (!data) return message(405, 'Metode tidak tersedia.');
  if (!Buffer.isBuffer(data.workbook) || !data.workbook.length || data.workbook.length > 1048576) return invalid('Pilih workbook .xlsx maksimal 1 MB.');
@@ -25,7 +25,7 @@ export async function convertNamesWorkbook({ c, data, message }) {
   if (workbook.worksheets.length !== 1) return invalid('Workbook harus memiliki tepat satu lembar.');
   sheet = workbook.worksheets[0];
  } catch { return invalid('Workbook .xlsx tidak dapat dibaca.'); }
- if (sheet.rowCount < 2 || sheet.rowCount > 1001 || sheet.columnCount !== 1 || sheet.getCell('A1').value !== 'nama_latin') return invalid('Gunakan template satu kolom nama_latin dengan 1–1.000 baris.');
+ if (sheet.rowCount < 2 || sheet.rowCount > 1001 || sheet.columnCount > (headerAlias?20:1) || (!headerAlias && sheet.getCell('A1').value !== 'nama_latin')) return invalid('Gunakan template satu kolom nama_latin dengan 1–1.000 baris.');
  const names = [];
  for (let n = 2; n <= sheet.rowCount; n++) {
   const raw = sheet.getCell('A' + n).value;

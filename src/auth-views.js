@@ -20,7 +20,7 @@ export function authPage(path,s,user,access={roles:[],permissions:[]},message=''
     if(access.permissions.includes('widget_NomorKkWidget')) body+=`<section class="widget full kk-widget"><div class="kk-summary"><div><h2>Nomor KK</h2><p>${esc(user.nomor_kk||'-')}</p></div><button type="button" data-kk-edit>Edit</button></div><div class="kk-editor" hidden>${form('/dashboard/nomor-kk',input('nomor_kk','Nomor KK','text',user.nomor_kk,'inputmode="numeric" maxlength="16"'),'Simpan')}<button class="secondary" type="button" data-kk-cancel>Batal</button></div></section>`;
     body+=details.stats||'';
     body+=details.admissions||'';
-    body+=`<section class="widget exam-widget"><div><h2>Ujian Online</h2><p>klik mulai ujian jika dipinta melaksanakan ujian online.</p></div><button type="button" disabled title="Modul ujian belum dipindahkan">Mulai Ujian</button></section>`;
+    body+=`<section class="widget exam-widget"><div><h2>Ujian Online</h2><p>klik mulai ujian jika dipinta melaksanakan ujian online.</p></div><a href="/dashboard/ujian">Mulai Ujian</a></section>`;
     body+=details.wali||'';
     body+='</div>';
   } else if(path==='/dashboard/edit-profile') {
@@ -28,5 +28,5 @@ export function authPage(path,s,user,access={roles:[],permissions:[]},message=''
   } else if(details.module) { title=details.module.title;body=details.module.body;
   } else { title='Halaman tidak ditemukan';body='<p>Halaman dashboard ini belum tersedia.</p>'; }
   const content=user?shell({title,body,path,user,access,csrf,message,status}):`<main class="auth ${path==='/dashboard/login'?'login-card':''}"><a class="brand" href="/" aria-label="Kembali ke halaman public"><img src="/logo/logo_al_yusro.png" alt="Logo Al Yusro"></a><h1>${title}</h1>${message?`<p role="${status>=400?'alert':'status'}" class="message">${esc(message)}</p>`:''}${body}</main>`;
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} · Al Yusro</title><link rel="icon" href="/logo/logo_al_yusro.png"><link rel="stylesheet" href="/dashboard-icons.css"><link rel="stylesheet" href="/dashboard.css?v=5"><script src="/dashboard.js?v=4" type="module"></script></head><body class="${user?'panel-layout':'auth-layout'}">${content}</body></html>`;
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${esc(title)} · Al Yusro</title><link rel="icon" href="/logo/logo_al_yusro.png"><link rel="stylesheet" href="/dashboard-icons.css"><link rel="stylesheet" href="/dashboard.css?v=5"><script src="/dashboard.js?v=4" type="module"></script></head><body class="${user?'panel-layout':'auth-layout'}">${content}</body></html>`;
 }

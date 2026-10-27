@@ -18,7 +18,7 @@ const c = await pool.getConnection(), createdTables = [], captures = [];
 let browser, server;
 try {
  const migrations = new URL('../../database/migrations/', import.meta.url), filenames = await readdir(migrations);
- for (const [resource, config] of Object.entries(masterResources).filter(([key]) => !['artikel','artikel-saya','fasilitas','galeri-fasilitas','dokumen'].includes(key))) {
+ for (const [resource, config] of Object.entries(masterResources).filter(([key]) => !['ijazah','ijazah-darul-ilmi','ijazah-mahad-aly','cbt-soal','cbt-ujian','cbt-peserta','santri','artikel','artikel-saya','fasilitas','galeri-fasilitas','dokumen'].includes(key))) {
   const filename = filenames.find(f => f.endsWith(`_create_${config.table}_table.php`));
   const source = await readFile(new URL(filename, migrations), 'utf8');
   await c.query(source.match(/CREATE TABLE[\s\S]*?ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/)[0].replace('CREATE TABLE', 'CREATE TEMPORARY TABLE'));
@@ -44,7 +44,7 @@ try {
  const visit = async path => { const response = await page.goto(base + path, { waitUntil: 'networkidle0' }); assert.equal(response.status(), 200, path); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, path); };
  for (const theme of process.env.MASTER_UI_ACTIONS_ONLY ? [] : ['light', 'dark']) for (const width of [1440, 390]) {
   await page.setViewport({ width, height: 900 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
-  for (const [resource, config] of Object.entries(masterResources).filter(([key]) => !['artikel','artikel-saya','fasilitas','galeri-fasilitas','dokumen'].includes(key))) {
+  for (const [resource, config] of Object.entries(masterResources).filter(([key]) => !['ijazah','ijazah-darul-ilmi','ijazah-mahad-aly','cbt-soal','cbt-ujian','cbt-peserta','santri','artikel','artikel-saya','fasilitas','galeri-fasilitas','dokumen'].includes(key))) {
    if (process.env.MASTER_UI_RESOURCES && !process.env.MASTER_UI_RESOURCES.split(',').includes(resource)) continue;
    const path = '/dashboard/' + resource;
    await visit(path + '?per_page=10');

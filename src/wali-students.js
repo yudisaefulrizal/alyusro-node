@@ -1,4 +1,4 @@
-import { tableQuery, renderTable, tableExport, tableFilters } from './dashboard-table.js';
+import { tableQuery, renderTable, tableExport, tableFilters, tableRowActions } from './dashboard-table.js';
 import { query } from './db.js';
 import { esc } from './dashboard-shell.js';
 
@@ -23,12 +23,14 @@ export function createWaliStudents(read=query) {
     if(!values)return {status:422,title:'Data Santri',body:'<p>Filter tidak valid.</p>'};
     const where="no_kk = ? AND (nama LIKE ? ESCAPE '!' OR nama_arab LIKE ? ESCAPE '!' OR jenjang LIKE ? ESCAPE '!' OR status LIKE ? ESCAPE '!') AND (? = '' OR jenjang = ?) AND (? = '' OR status = ?)";
     const args=[kk,query.pattern,query.pattern,query.pattern,query.pattern,values.jenjang,values.jenjang,values.status,values.status];
-    const rows=await read(`SELECT COUNT(*) OVER() AS table_total, id, nama, nama_arab, jenjang, status FROM santris WHERE ${where} ORDER BY ${query.sort} ${query.direction.toUpperCase()}, id ASC LIMIT ${params.has('export')?10001:query.limit} OFFSET ${params.has('export')?0:query.offset}`,args);
+    const rows=await read(`SELECT COUNT(*) OVER() AS table_total, id, nama, nama_arab, jenjang, status, (SELECT path FROM foto_santris WHERE santri_id=santris.id ORDER BY id LIMIT 1) AS foto FROM santris WHERE ${where} ORDER BY ${query.sort} ${query.direction.toUpperCase()}, id ASC LIMIT ${params.has('export')?10001:query.limit} OFFSET ${params.has('export')?0:query.offset}`,args);
     const columns=[{key:'nama',label:'Nama'},{key:'nama_arab',label:'Nama Arab'},{key:'jenjang',label:'Jenjang'},{key:'status',label:'Status'}];
     const exported=await tableExport(params,rows,columns,'Data Santri');if(exported)return exported;
     if(access.permissions.includes('view_santri::wali'))columns[0]={key:'nama',label:'Nama',html:row=>`<a href="/dashboard/santri-wali/${esc(row.id)}">${esc(row.nama)}</a>`};
+    columns.splice(1,0,{key:'foto',label:'Foto',html:row=>row.foto?`<a href="/dashboard/santri-wali/${esc(row.id)}/berkas/foto"><img class="document-thumb" style="width:64px;height:80px;object-fit:cover" src="/dashboard/santri-wali/${esc(row.id)}/berkas/foto" alt="Pass foto ${esc(row.nama)}" loading="lazy"></a>`:'<span>Belum ada foto</span>'});
+    if(access.permissions.includes('update_santri::wali'))columns.push({key:'actions',label:'Aksi',html:row=>tableRowActions([{href:`/dashboard/santri-wali/${row.id}/edit`,label:'Edit'}])});
     const table=renderTable({base:'/dashboard/santri-wali',query,rows,columns,sortOptions,exportable:true,filters:filters.map(f=>({...f,value:values[f.name]})),title:'data santri',searchLabel:'Cari nama, jenjang atau status',emptyText:'Tidak ada santri yang cocok.'});
-    return {status:200,title:'Data Santri',body:`<section>${table}</section>`};
+    return {status:200,title:'Data Santri',body:`<section>${access.permissions.includes('create_santri::wali')?'<a class="button" href="/dashboard/santri-wali/create">Tambah santri</a>':''}${table}</section>`};
   };
 }
 const missing=()=>({status:404,title:'Santri tidak ditemukan',body:'<p>Data santri tidak ditemukan.</p>'});

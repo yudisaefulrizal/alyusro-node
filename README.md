@@ -2,7 +2,7 @@
 
 Daftar kerja dashboard: [Checklist migrasi dashboard Node.js](../docs/checklist-migrasi-nodejs.md).
 
-Prototipe migrasi halaman publik ke Node.js 22+, memakai database MySQL yang sama dengan Laravel dan aset tampilan asli.
+Implementasi migrasi ke Node.js 22+, memakai database MySQL yang sama dengan Laravel dan aset tampilan asli. Status dashboard terkini: bagian “Penuntasan dashboard — 28 Oktober 2026”; catatan bertanggal sebelumnya adalah riwayat pengembangan.
 
 ```bash
 cd alyusro-node
@@ -368,3 +368,62 @@ Verifikasi: 105 tes `npm test` lulus. `test/student-storage.test.js` menulis fix
 Checklist yang sama diperbarui untuk pekerjaan yang terverifikasi. Modul Santri, CBT, ijazah/generator lain, administrasi akun/role, Audit Logs, verifikasi operasional umum dan penerimaan SMTP nyata masih terbuka. Migrasi keseluruhan belum selesai.
 
 Server port 8075 direstart setelah perubahan. Login merespons HTTP 200; Perpustakaan Nama dan cetak formulir tanpa sesi mengarah ke login (303).
+
+## Penuntasan dashboard — 28 Oktober 2026
+
+Seluruh checkbox pekerjaan pada checklist yang sama sudah diselesaikan. Bagian bertanggal sebelumnya di README merupakan riwayat perkembangan; status terkini dijelaskan di sini.
+
+Santri tersedia di `/dashboard/santri`: formulir sumber aktif, relasi kelas/pengampu, filter, impor/template Excel, ekspor, perubahan kelas/status massal, berkas dan kartu. Impor memperbarui berdasarkan NIK dan mempertahankan nilai lama bila sel kosong; kolom yang dikomentari pada importer Laravel tidak ditulis. Daftar wali menampilkan foto melalui endpoint terbatas, tambah/edit sesuai permission dan pembatasan KK. Hapus santri ditolak bila masih memiliki riwayat akademik/ijazah.
+
+CBT tersedia di `/dashboard/cbt-soal`, `/dashboard/cbt-ujian`, `/dashboard/cbt-peserta` dan `/dashboard/ujian`. Bank soal mendukung PG, benar/salah, essay, bobot, verifikasi, impor Excel/JSON serta prompt generator. Ujian mendukung pemilihan/generate soal per tema, penugasan nomor pendaftaran/prefix, reset, nilai essay dan ekspor hasil dengan nama peserta. Runtime membatasi KK, menyimpan snapshot soal/opsi/kunci, deadline dan jawaban di server; timer tidak dimulai ulang saat refresh. Jawaban lokal dibatasi user dan attempt. Pengumpulan bersamaan/retry tidak menggandakan statistik. Nilai PG memakai seluruh soal PG yang ditugaskan; essay dinilai operator. Peringatan tab/copy-paste mengikuti interaksi browser, bukan klaim pengawasan perangkat. Attempt Laravel tanpa snapshot diadopsi dengan waktu mulai dan jawaban yang sudah ada; soal yang belum memiliki snapshot memakai bank saat pertama dibuka di Node.
+
+`/dashboard/ijazah`, `/dashboard/ijazah-darul-ilmi` dan `/dashboard/ijazah-mahad-aly` menyediakan data, relasi, verifikasi, impor/template, ekspor terpilih, hitung ulang, cetak, transkrip dan QR. Nilai/rata-rata/IPK berbobot dihitung server dari 9/18/39 mata pelajaran. Penomoran mengunci event dan memakai suffix maksimum agar penghapusan tidak menyebabkan tabrakan nomor berikutnya. Impor MA mempertahankan aturan sumber yang menaikkan nilai di bawah 70 menjadi 70. Cetak memakai template/font asli, identitas, tanggal event, foto MA dan penandatangan; tanggal Hijriah diambil melalui HTTPS Aladhan dengan timeout dan cache, bukan angka tetap. Gangguan layanan tanggal menghasilkan kegagalan cetak yang jelas, tanpa tanggal rekaan. QR menuju verifikasi minimal; record hanya dianggap terverifikasi setelah kedua penandatangan menyetujui.
+
+`/dashboard/users` dan `/dashboard/roles` mengelola akun, role web, permission dan tindakan massal sesuai policy. Pengubahan password mencabut sesi Node dan Laravel serta token reset terkait. Pengeditan role web mempertahankan assignment guard lain. Cache Spatie dihapus dalam transaksi memakai konfigurasi efektif Laravel, termasuk config cache dan prefix database cache. Node membaca permission langsung tiap request. `/dashboard/audit-logs` hanya baca/detail; penulisan bisnis dan audit berhasil atau rollback bersama, termasuk saat pemanggil memakai autocommit. Password, token dan rahasia disamarkan; perubahan nilai rahasia hanya mencatat nama field.
+
+### Endpoint dan otorisasi
+
+| Fungsi | Endpoint Node | Otorisasi |
+| --- | --- | --- |
+| Santri, status, kelas, cetak kartu ID | `/dashboard/santri`, `/:id/status`, `/:id/card` | Permission Santri; status juga menerima wali dengan KK pemilik |
+| Wali tambah/edit dan berkas | `/dashboard/santri-wali/...`, `/dashboard/dokumen-wali/...` | Permission terkait, KK wajib dan cocok; CSRF/Origin untuk mutasi |
+| Calon, status/catatan, ZIP, PDF formulir | `/dashboard/calon-santri/...` | Permission Calon Santri dan pengecualian status bukan calon |
+| Template/impor/ekspor master | `/dashboard/:resource/template`, `/import`, `?export=xlsx` | Permission modul; impor memerlukan create/update sesuai perilaku upsert |
+| Ujian dan nilai | `/dashboard/cbt-*`, `/dashboard/ujian/...` | Operator memakai permission CBT; runtime memakai peserta yang terhubung KK |
+| Ijazah/transkrip/QR | `/dashboard/ijazah*/:id/{print,transcript,qr}` | Permission daftar ijazah terkait |
+| Ekspor calon/n8n dan kartu NIS | `/api/export/calon-santri`, `/api/export/calon-santri/n8n`, `/api/cetak/kartu-santri/nis/:nis` | Header X-API-KEY lingkup ekspor |
+| Unggah/cari dokumen | `/api/dokumen/upload`, `/api/dokumen/search` | Header X-API-KEY lingkup dokumen |
+| CRUD kamus dan konversi batch | `/api/perpustakaan-nama/...`, `/api/konversi-nama-latin-to-arabic-batch[-excel]` | Header X-API-KEY lingkup kamus |
+| Unduh/pratinjau hasil API | `/api/dokumen/file/:id` | HMAC per record, kedaluwarsa satu jam; direktori tidak dibuka |
+| Verifikasi ijazah | `/mathaapp/ijazah/cek/:nomor` | Public, hasil minimal tanpa NIK, tanggal lahir, email atau berkas |
+
+API kartu mempertahankan respons JSON berisi id/nama/NIS serta tautan download/preview, bukan mengganti kontrak menjadi respons gambar langsung. Hasil file disimpan pada disk public Laravel dengan nama acak; endpoint Node tetap mensyaratkan permission atau tautan bertanda tangan. Ekspor n8n mempertahankan bentuk JSON sumber dan 46 kolom Excel sumber; nomor identitas tetap string dan RT/RW berformat tiga digit. Batas ekspor 10.000 baris menghasilkan penolakan eksplisit, bukan pemotongan diam-diam.
+
+GET lama untuk cetak kartu, tiga ijazah/transkrip, formulir/ZIP, template dan status diarahkan ke endpoint Node yang terotorisasi. GET `/ujian`, `/prepare-exam` dan `/cbt/prepare` mengarah ke runtime baru. Formulir Node mengirim ke endpoint sesi+CSRF baru; endpoint POST Sanctum lama tidak dipakai UI Node. URL bebas `/preview/:path` dan `/download/:path` tidak dibuka kembali. API konversi satu nama publik yang sudah dipakai halaman public tetap memakai handler sebelumnya.
+
+Inventaris resource aktif: `CBTUjianResource::getRelations()` hanya mendaftarkan PesertaRelationManager; PesertaPublikRelationManager tidak diaktifkan. Kelas GeneratorSertifikatTasmi/GeneratorJuaraKelas/GeneratorFlayer tidak memiliki pemanggil aktif. Dua rute GeneratorController lama menunjuk controller yang tidak ada. Kelas/rute mati tersebut dicatat sebagai keputusan cakupan, bukan diklaim sebagai generator baru yang telah diimplementasikan.
+
+### Konfigurasi dan pemasangan
+
+Jalankan dari root Laravel:
+
+```bash
+php artisan migrate --path=database/migrations/2026_10_27_000105_expand_cbt_participant_answers.php --force
+cd alyusro-node
+npm ci
+npm run auth:setup
+npm run cbt:setup
+npm start
+```
+
+Migrasi memperlebar j1–j100 menjadi TEXT agar jawaban PG panjang tidak terpotong; setup membuat `node_cbt_attempts` dengan kunci attempt acak. Setup idempoten. Tetapkan `NODE_EXPORT_API_KEY`, `NODE_DOCUMENT_API_KEY`, `NODE_LIBRARY_API_KEY`, `NODE_FILE_SIGNING_KEY` dan `NODE_AUTH_PUBLIC_URL` di environment/`.env` induk. Kunci ekspor dan dokumen lokal mempertahankan konfigurasi integrasi Laravel; kunci kamus/tanda tangan dibuat acak. Nilai rahasia tidak masuk Git. URL public harus memakai origin deployment yang benar agar tautan API dapat diakses penerima.
+
+### Bukti verifikasi
+
+`npm test`: 110 tes lulus, tanpa skipped/failure. Fixture memakai SQL TEMPORARY atau tabel berprefix acak, sesi dan identitas sintetis. Skenario memeriksa sukses, validasi, CSRF/Origin, permission, KK/pemilik lain, impor atomik, isi workbook/ZIP/PDF/PNG, rollback audit, cache role, deadline, pengumpulan bersamaan dan penolakan retry. Tes ijazah menjalankan bootstrap Laravel/Eloquent untuk membaca tulisan Node, lalu perubahan Laravel diperiksa melalui HTTP Node. Tes storage memeriksa baca/tulis disk dua arah dan membersihkan berkas sintetis. Tidak ada akun/santri operasional yang diedit oleh fixture.
+
+Suite browser: `ADMIN_UI=1 node --test test/admin-resources.test.js`, `STUDENT_UI=1 node --test test/students-admin.test.js`, `CBT_UI=1 node --test test/cbt.test.js`, `DIPLOMA_UI=1 node --test test/diplomas.test.js`, `CONTENT_UI=1 node --test test/content-modules.test.js`, `node scripts/check-dashboard-ui.js` dan `node scripts/check-master-ui.js`. Pemeriksaan mencakup desktop 1440 px/HP 390 px, terang/gelap, daftar berisi/kosong, formulir, overflow dan exception JavaScript; tabel bersama diuji keyboard, kolom tersimpan dan interaksi. Dashboard juga diperiksa menggunakan permission dari seluruh 16 role web, dengan identitas sintetis tanpa login akun asli. PNG kartu dan enam dokumen ijazah/transkrip dirender dan diperiksa; OpenCV berhasil membaca QR ketiga ijazah dan ketiga transkrip ke nomor dokumen yang sesuai. Artefak lokal berada di `storage/auth-preview/` dan tidak dikomit.
+
+SMTP nyata telah diuji ke alamat yang diberikan pengguna; pengguna mengonfirmasi email diterima dan halaman reset terbuka. Tidak dilakukan perubahan password akun tersebut. Pemanggilan penyedia Hijriah nyata juga berhasil. Server lokal 8075 direstart: login/CBT JS HTTP 200, modul privat tanpa sesi HTTP 303, API tanpa kunci HTTP 403, dan path dokumen privat langsung HTTP 404.
+
+Kesetaraan mengikuti fungsi resource aktif dan permission, dengan kontrol UI Node bersama. Pengujian fixture tidak membuktikan seluruh kemungkinan penulisan bersamaan aplikasi lain atau semua kondisi infrastruktur; hasil ini tidak menjadi jaminan absolut bebas cacat. Dua advisory moderate pada dependensi transitif ExcelJS/UUID sudah ada sebelum perubahan; tidak diterapkan downgrade mayor otomatis.
