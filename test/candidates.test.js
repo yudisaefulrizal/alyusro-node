@@ -79,3 +79,21 @@ test('selected candidate export requires list permission and exports only eligib
  const book=new ExcelJS.Workbook();await book.xlsx.load(result.xlsx);assert.equal(book.worksheets[0].getCell('A2').value,'<Ali>');
  const page=await run({access:{permissions:['view_any_calon::santri']}});assert.match(page.body,/Ekspor Excel terpilih/);assert.doesNotMatch(page.body,/Ubah status terpilih/);
 });
+
+test('candidate ZIP includes only permitted files and selected candidates',async()=>{
+ const {mkdtemp,writeFile,symlink,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');const {join}=await import('node:path');const {default:JSZip}=await import('jszip');
+ const root=await mkdtemp(join(tmpdir(),'candidate-zip-'));const outside=await mkdtemp(join(tmpdir(),'candidate-outside-'));
+ try{
+  await writeFile(join(root,'payment.jpg'),'payment');await writeFile(join(root,'identity.png'),'identity');await writeFile(join(outside,'secret.jpg'),'secret');await symlink(join(outside,'secret.jpg'),join(root,'escape.jpg'));
+  let sql,args;const db={getConnection:async()=>({release(){},async execute(q,a){sql=q;args=a;return [[{id:1,foto_akta_lahir:'identity.png',foto_pembayaran_psb_madrasah:'payment.jpg',foto_kartu_keluarga:'escape.jpg'}]];}})};
+  const run=createCandidates(db,root);
+  assert.equal((await run({access:{permissions:[]},action:'zip',id:'1'})).status,403);
+  assert.equal((await run({access,action:'bulkZip',data:{invalid:'1'}})).status,422);
+  const single=await run({access,action:'zip',id:'1'});const archive=await JSZip.loadAsync(single.zip);
+  assert.equal(await archive.file('1/foto_akta_lahir.png').async('string'),'identity');assert.equal(archive.file('1/foto_kartu_keluarga.jpg'),null);
+  const bulk=await run({access,action:'bulkZip',data:{id_1:'1',id_2:'1'}});const payments=await JSZip.loadAsync(bulk.zip);
+  assert.equal(await payments.file('1/foto_pembayaran_psb_madrasah.jpg').async('string'),'payment');assert.equal(payments.file('1/foto_akta_lahir.png'),null);
+  assert.deepEqual(args,['1','2']);assert.match(sql,/status NOT IN/);
+ }finally{await rm(root,{recursive:true,force:true});await rm(outside,{recursive:true,force:true});}
+});

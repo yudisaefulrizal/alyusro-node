@@ -72,7 +72,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
       s.expires_at=now()+duration(s);await store.putSession(s);if(previous)await store.deleteSession(previous.id);setCookie(raw);
     };
     const page=async(view,message='',status=200,details={})=>send(status,authPage(view,s,user,access,message,status,details));
-    const moduleResult=(result,filename)=>{if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}return page(path,'',result.status,{module:result});};
+    const moduleResult=(result,filename)=>{if(result.xlsx!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.xlsx"`);return send(200,result.xlsx,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');}if(result.zip!==undefined){res.setHeader('Content-Disposition',`attachment; filename="${filename}.zip"`);return send(200,result.zip,'application/zip');}return page(path,'',result.status,{module:result});};
     try {
       if(!['GET','HEAD','POST'].includes(req.method))return send(405,'Metode tidak tersedia.','text/plain');
       if(cookie&&/^[a-f0-9]{64}$/.test(cookie))s=await store.session(hash(cookie));
@@ -96,7 +96,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
         }
         const candidateFile=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/berkas\/([a-z_]+)$/);
         if(candidateFile){const result=await files({user,access,id:candidateFile[1],field:candidateFile[2],scope:'candidate'});return result.status===200?send(200,result.content,'image/jpeg'):send(result.status,'Berkas tidak ditemukan.','text/plain');}
-        const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete))?$/);
+        const candidatePage=path.match(/^\/dashboard\/calon-santri(?:\/([1-9]\d{0,14})\/(status|note|delete|zip))?$/);
         if(candidatePage){const result=await candidatesHandler({access,action:candidatePage[2]||'list',id:candidatePage[1],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'calon-santri');}
         const admissionPage=path.match(/^\/dashboard\/penerimaan-santri(?:\/(create)|\/([1-9]\d{0,14})\/(edit))?$/);
         if(admissionPage){const action=admissionPage[1]?'create':admissionPage[3]?'edit':'list';const result=await admissionsAdminHandler({access,action,id:admissionPage[2],params:new URL(req.url,'http://localhost').searchParams,csrf:s.csrf});return moduleResult(result,'penerimaan-santri');}
@@ -159,6 +159,7 @@ export function createAuthHandler({store=authStore,students=waliStudents,editStu
       const editMatch=path.match(/^\/dashboard\/santri-wali\/([1-9]\d{0,14})\/edit$/);
       if(editMatch){const result=await editStudent({user,access,id:editMatch[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard'):page(path,'',result.status,{module:result});}
       if(path==='/dashboard/calon-santri/bulk-export'){const result=await candidatesHandler({access,action:'bulkExport',data});return moduleResult(result,'calon-santri-terpilih');}
+      if(path==='/dashboard/calon-santri/bulk-zip'){const result=await candidatesHandler({access,action:'bulkZip',data});return moduleResult(result,'bukti-pembayaran');}
       if(path==='/dashboard/calon-santri/bulk-status'){const result=await candidatesHandler({access,action:'bulkStatus',csrf:s.csrf,data});return result.status===303?redirect('/dashboard/calon-santri'):page(path,'',result.status,{module:result});}
       const candidateAction=path.match(/^\/dashboard\/calon-santri\/([1-9]\d{0,14})\/(status|note|delete)$/);
       if(candidateAction){const result=await candidatesHandler({access,action:candidateAction[2],id:candidateAction[1],csrf:s.csrf,data});return result.status===303?redirect('/dashboard/calon-santri'):page(path,'',result.status,{module:result});}

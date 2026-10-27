@@ -2,16 +2,39 @@ import { candidateFiles } from './wali-files.js';
 import { pool } from './db.js';
 import { esc } from './dashboard-shell.js';
 import { tableQuery, tableFilters, renderTable, tableExport, tableRowActions, selectedTableIds, tableExcel } from './dashboard-table.js';
+import JSZip from 'jszip';
+import { realpath, readFile, stat } from 'node:fs/promises';
+import { resolve, sep, extname } from 'node:path';
 
 const base='/dashboard/calon-santri';
 const message=(status,text)=>({status,title:'Calon Santri',body:`<section><p>${esc(text)}</p><a href="${base}">Kembali ke daftar</a></section>`});
 const excluded="'Santri','Lulus','Di Keluarkan'";
-export function createCandidates(db=pool){
+export function createCandidates(db=pool, uploadRoot=new URL('../storage/uploads/',import.meta.url)){
  return async function candidates({access,action='list',id,params=new URLSearchParams(),csrf='',data}){
-  if(!access.permissions.includes(['list','bulkExport'].includes(action)?'view_any_calon::santri':action==='delete'?'delete_calon::santri':'update_calon::santri'))return message(403,'Anda tidak memiliki izin untuk tindakan ini.');
-  if(action!=='list' && !['bulkStatus','bulkExport'].includes(action) && (!['status','note','delete'].includes(action)||!/^\d{1,15}$/.test(String(id))))return message(404,'Halaman tidak ditemukan.');
+  if(!access.permissions.includes(['list','bulkExport','zip','bulkZip'].includes(action)?'view_any_calon::santri':action==='delete'?'delete_calon::santri':'update_calon::santri'))return message(403,'Anda tidak memiliki izin untuk tindakan ini.');
+  if(action!=='list' && !['bulkStatus','bulkExport','bulkZip'].includes(action) && (!['status','note','delete','zip'].includes(action)||!/^\d{1,15}$/.test(String(id))))return message(404,'Halaman tidak ditemukan.');
   const c=await db.getConnection();
   try {
+   if(action==='zip'||action==='bulkZip'){
+    const ids=action==='zip'?[String(id)]:selectedTableIds(data);
+    if(!ids)return message(422,'Pilih 1–100 calon santri yang valid.');
+    const [rows]=await c.execute(`SELECT s.*, (SELECT f.path FROM foto_santris f WHERE f.santri_id=s.id ORDER BY f.id LIMIT 1) AS foto FROM santris s WHERE s.id IN (${ids.map(()=>'?').join(',')}) AND s.status NOT IN (${excluded})`,ids);
+    const zip=new JSZip(); let count=0,total=0; let root;
+    try {root=await realpath(uploadRoot);} catch {return message(404,'Tidak ada berkas untuk diunduh.');}
+    const all=['foto','foto_akta_lahir','foto_kartu_keluarga','foto_ijazah_sd','foto_ijazah_smp','foto_pembayaran_psb_madrasah','foto_pembayaran_psb_darul_ilmi','foto_surat_komitment_darul_ilmi'];
+    const fields=action==='zip'?all:['foto_pembayaran_psb_madrasah','foto_pembayaran_psb_darul_ilmi'];
+    for(const row of rows) for(const field of fields){
+     if(typeof row[field]!=='string'||!row[field])continue;
+     try {const file=await realpath(resolve(root,row[field]));const ext=extname(file).toLowerCase();
+      if(!file.startsWith(root+sep)||!['.jpg','.jpeg','.png','.webp','.pdf'].includes(ext))continue;
+      const info=await stat(file);if(!info.isFile()||info.size>10*1024*1024)continue;
+      total+=info.size;if(total>50*1024*1024)return message(413,'Ukuran berkas terpilih melebihi 50 MB.');
+      zip.file(`${row.id}/${field}${ext}`,await readFile(file));count++;
+     }catch {continue;}
+    }
+    if(!count)return message(404,'Tidak ada berkas untuk diunduh.');
+    return {status:200,zip:await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE'})};
+   }
    if(action==='bulkExport'){
     const ids=selectedTableIds(data);if(!ids)return message(422,'Pilih 1–100 calon santri yang valid.');
     const [rows]=await c.execute(`SELECT s.nama,s.nomor_pendaftaran,s.status,s.nisn,s.nik,s.asal_sekolah,s.jenis_kelamin,s.nomor_hp,p.kode_gelombang,s.catatan,s.created_at FROM santris s LEFT JOIN penerimaan_santris p ON p.id=s.penerimaan_santri_id WHERE s.id IN (${ids.map(()=>'?').join(',')}) AND s.status NOT IN (${excluded}) ORDER BY s.id DESC`,ids);
@@ -50,8 +73,8 @@ export function createCandidates(db=pool){
    const columns=[{key:'nama',label:'Nama'},{key:'nomor_pendaftaran',label:'No Pendaftaran'},{key:'status',label:'Status'},{key:'nisn',label:'NISN'},{key:'nik',label:'NIK'},{key:'asal_sekolah',label:'Asal Sekolah'},{key:'jenis_kelamin',label:'Jenis Kelamin'},{key:'nomor_hp',label:'No HP',html:r=>{let n=String(r.nomor_hp||'').replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);else if(n.startsWith('8'))n='62'+n;return n?`<a href="https://wa.me/${n}?text=${encodeURIComponent('Bismillah, Apakah betul ini dengan abu/ummu dari ananda '+r.nama)}" target="_blank" rel="noopener noreferrer">${esc(r.nomor_hp)}</a>`:'—';}},{key:'kode_gelombang',label:'Gelombang'},{key:'catatan',label:'Catatan'},{key:'created_at',label:'Tanggal Daftar'}];
    const exported=await tableExport(params,rows,columns,'Calon Santri');if(exported)return exported;
    for(const label of ['Pass Foto','Akta Lahir','Kartu Keluarga','Bukti Pembayaran','Ijazah'])columns.push({label,html:r=>{const entry=candidateFiles(r).find(([,name])=>name===label);if(!entry||!r[entry[0]])return '—';const url=`${base}/${encodeURIComponent(r.id)}/berkas/${entry[0]}`;return `<a href="${url}" target="_blank" rel="noopener noreferrer"><img class="document-thumb" src="${url}" alt="${esc(label)}"></a>`;}});
-   if(access.permissions.includes('update_calon::santri')||access.permissions.includes('delete_calon::santri'))columns.push({label:'Aksi',html:r=>tableRowActions([...(access.permissions.includes('update_calon::santri')?[{label:'Ubah Status',href:`${base}/${r.id}/status`},{label:'Ubah Catatan',href:`${base}/${r.id}/note`}]:[]),...(access.permissions.includes('delete_calon::santri')?[{label:'Hapus',href:`${base}/${r.id}/delete`}]:[])])});
-   return {status:200,title:'Calon Santri',body:`<section>${renderTable({base,query,rows,columns,title:'calon santri',searchLabel:'Cari calon santri',emptyText:'Tidak ada calon santri yang cocok.',filters:filters.map(f=>({...f,value:values[f.name]})),sortOptions:[{value:'nama',label:'Nama'},{value:'nomor_pendaftaran',label:'No Pendaftaran'},{value:'created_at',label:'Tanggal Daftar'},{value:'nisn',label:'NISN'},{value:'nik',label:'NIK'},{value:'asal_sekolah',label:'Asal Sekolah'},{value:'jenis_kelamin',label:'Jenis Kelamin'},{value:'nomor_hp',label:'No HP'},{value:'status',label:'Status'},{value:'kode_gelombang',label:'Gelombang'},{value:'catatan',label:'Catatan'}],exportable:true,bulk:{action:`${base}/bulk-export`,csrf,rowLabel:r=>r.nama,actions:[{label:'Ekspor Excel terpilih',action:`${base}/bulk-export`},...(access.permissions.includes('update_calon::santri')?[{label:'Ubah status terpilih',action:`${base}/bulk-status`}]:[])],confirm:'Lanjutkan aksi untuk calon santri terpilih?'}})}</section>`};
+   columns.push({label:'Aksi',html:r=>tableRowActions([{label:'Unduh seluruh berkas (ZIP)',href:`${base}/${r.id}/zip`},...(access.permissions.includes('update_calon::santri')?[{label:'Ubah Status',href:`${base}/${r.id}/status`},{label:'Ubah Catatan',href:`${base}/${r.id}/note`}]:[]),...(access.permissions.includes('delete_calon::santri')?[{label:'Hapus',href:`${base}/${r.id}/delete`}]:[])])});
+   return {status:200,title:'Calon Santri',body:`<section>${renderTable({base,query,rows,columns,title:'calon santri',searchLabel:'Cari calon santri',emptyText:'Tidak ada calon santri yang cocok.',filters:filters.map(f=>({...f,value:values[f.name]})),sortOptions:[{value:'nama',label:'Nama'},{value:'nomor_pendaftaran',label:'No Pendaftaran'},{value:'created_at',label:'Tanggal Daftar'},{value:'nisn',label:'NISN'},{value:'nik',label:'NIK'},{value:'asal_sekolah',label:'Asal Sekolah'},{value:'jenis_kelamin',label:'Jenis Kelamin'},{value:'nomor_hp',label:'No HP'},{value:'status',label:'Status'},{value:'kode_gelombang',label:'Gelombang'},{value:'catatan',label:'Catatan'}],exportable:true,bulk:{action:`${base}/bulk-export`,csrf,rowLabel:r=>r.nama,actions:[{label:'Ekspor Excel terpilih',action:`${base}/bulk-export`},{label:'Unduh bukti pembayaran (ZIP)',action:`${base}/bulk-zip`},...(access.permissions.includes('update_calon::santri')?[{label:'Ubah status terpilih',action:`${base}/bulk-status`}]:[])],confirm:'Lanjutkan aksi untuk calon santri terpilih?'}})}</section>`};
   }finally{c.release();}
  };
 }
