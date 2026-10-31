@@ -1,0 +1,869 @@
+/* icon */
+@font-face {
+    font-family: 'alyusro-icon';
+    src: url('../../fonts/alyusro-icon.eot?n82k32');
+    src: url('../../fonts/alyusro-icon.eot?n82k32#iefix') format('embedded-opentype'),
+    url('../../fonts/alyusro-icon.ttf?n82k32') format('truetype'),
+    url('../../fonts/alyusro-icon.woff?n82k32') format('woff'),
+    url('../../fonts/alyusro-icon.svg?n82k32#alyusro-icon') format('svg');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+[class^="ysr-"], [class*=" ysr-"] {
+    /* use !important to prevent issues with browser extensions that change fonts */
+    font-family: 'alyusro-icon' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ysr-link:before {
+    content: "\e91b";
+    color: #e3e3e3;
+}
+
+.ysr-whatsapps:before {
+    content: "\e91c";
+    color: #fff;
+}
+
+.ysr-youtube:before {
+    content: "\e91d";
+    color: #fff;
+}
+
+.ysr-facebook:before {
+    content: "\e91e";
+    color: #fff;
+}
+
+.ysr-instagram:before {
+    content: "\e91f";
+    color: #fff;
+}
+
+.ysr-artikel:before {
+    content: "\e900";
+    color: #e3e3e3;
+}
+
+.ysr-download:before {
+    content: "\e901";
+    color: #e3e3e3;
+}
+
+.ysr-ekstrakulikuler:before {
+    content: "\e902";
+    color: #e3e3e3;
+}
+
+.ysr-fasilitas:before {
+    content: "\e903";
+    color: #e3e3e3;
+}
+
+.ysr-jadwal-sholat:before {
+    content: "\e904";
+    color: #e3e3e3;
+}
+
+.ysr-kajian:before {
+    content: "\e905";
+    color: #e3e3e3;
+}
+
+.ysr-kalender:before {
+    content: "\e906";
+    color: #e3e3e3;
+}
+
+.ysr-komen:before {
+    content: "\e907";
+    color: #e3e3e3;
+}
+
+.ysr-kurikulum-bahasa-arab:before {
+    content: "\e908";
+    color: #e3e3e3;
+}
+
+.ysr-kurikulum:before {
+    content: "\e909";
+    color: #e3e3e3;
+}
+
+.ysr-like:before {
+    content: "\e90a";
+    color: #e3e3e3;
+}
+
+.ysr-login:before {
+    content: "\e90b";
+    color: #e3e3e3;
+}
+
+.ysr-logout:before {
+    content: "\e90c";
+    color: #e3e3e3;
+}
+
+.ysr-map:before {
+    content: "\e90d";
+    color: #e3e3e3;
+}
+
+.ysr-pendaftaran:before {
+    content: "\e90e";
+    color: #e3e3e3;
+}
+
+.ysr-pendidik:before {
+    content: "\e90f";
+    color: #e3e3e3;
+}
+
+.ysr-play-video:before {
+    content: "\e910";
+    color: #e3e3e3;
+}
+
+.ysr-poin-map:before {
+    content: "\e911";
+    color: #e3e3e3;
+}
+
+.ysr-prestasi:before {
+    content: "\e912";
+    color: #e3e3e3;
+}
+
+.ysr-sekolah:before {
+    content: "\e913";
+    color: #e3e3e3;
+}
+
+.ysr-share:before {
+    content: "\e914";
+    color: #e3e3e3;
+}
+
+.ysr-struktur-organisasi:before {
+    content: "\e915";
+    color: #e3e3e3;
+}
+
+.ysr-tentang:before {
+    content: "\e916";
+    color: #e3e3e3;
+}
+
+.ysr-terjemah:before {
+    content: "\e917";
+    color: #e3e3e3;
+}
+
+.ysr-upload:before {
+    content: "\e918";
+    color: #e3e3e3;
+}
+
+.ysr-vidio:before {
+    content: "\e919";
+    color: #e3e3e3;
+}
+
+.ysr-vidio-banyak:before {
+    content: "\e91a";
+    color: #e3e3e3;
+}
+
+.gambar_landing {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 1000px;
+    /* Maksimal lebar halaman */
+    margin-left: auto;
+    margin-right: auto;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    text-align: justify;
+    hyphens: auto;
+    /* Membantu pemenggalan kata */
+}
+
+/* Efek loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Menyembunyikan overlay setelah loading selesai */
+.loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+p {
+    line-height: 1.7;
+    font-size: 16px;
+    margin-bottom: 5px;
+    padding: 5px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+
+.tanggal_sekarang {
+    color: #000000;
+    font-family: 'Poppins_semi_bold', sans-serif;
+}
+
+.logo a img {
+    width: 107px;
+    height: 60px;
+    /* Tinggi logo */
+}
+
+.sosial_media {
+    display: flex;
+    gap: 0px;
+    background-color: #083e6b;
+    /* Warna latar sosial media */
+    border-radius: 10px;
+}
+
+.sosial_media a {
+    display: inline-block;
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 10px;
+}
+
+.sosial_media a img {
+    width: 30px;
+    /* Ukuran ikon sosial media */
+    height: 30px;
+}
+
+.selamat_datang {
+    margin-top: 50px;
+    text-align: center;
+    flex-grow: 1;
+    font-size: 2vw;
+    text-transform: uppercase;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    color: #000000;
+}
+
+.hero {
+    /* Tambahkan gaya khusus untuk bagian hero jika diperlukan */
+}
+
+.hero_p1 {
+    margin: 10px 0;
+    text-align: center;
+    flex-grow: 1;
+    font-size: clamp(16px, 6vw, 40px);
+    text-transform: uppercase;
+    font-family: 'Poppins_bold', sans-serif;
+    color: #000000;
+    line-height: 1;
+}
+
+.hero_p2 {
+    margin-top: -3%;
+    text-align: center;
+    flex-grow: 1;
+    font-size: 20px;
+    font-family: 'Poppins', sans-serif;
+    color: #000000;
+    padding: 0 80px;
+}
+
+.temukan_informasi {
+    margin-top: 5px;
+    text-align: center;
+    font-size: 15px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    color: #000000;
+    background-color: #ffffff;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    margin-bottom: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.login, .logout, .dashboard {
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.icon_info {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tombol_informasi span {
+    display: block;
+    margin-bottom: auto;
+    line-height: 1.3;
+}
+
+.pilihan_informasi {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 0px;
+    justify-items: center;
+    padding: 2px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tombol_informasi {
+    background-color: #083e6b;
+    padding: 5px;
+    border-radius: 5px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-align: center;
+    width: 80%;
+    font-size: 8px;
+    display: flex;
+    justify-content: center;
+    height: 40px;
+    text-decoration: none;
+    margin: 0 0 5px;
+}
+
+.tombol_informasi_pendaftaran {
+    background-color: #083e6b;
+    padding: 5px;
+    border-radius: 5px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-align: center;
+    width: 200%;
+    font-size: 11px;
+    display: flex;
+    justify-content: center;
+    height: 20px;
+    text-decoration: none;
+    margin: 0 0 5px;
+}
+
+.icon_info svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+    fill: white;
+}
+
+.tombol_informasi p {
+    margin-top: 0;
+}
+
+.tombol_informasi_aktif {
+    background-color: #ffffff;
+    /* Warna latar belakang */
+    color: #083e6b;
+    /* Warna teks */
+    border: 3px solid #E6B800;
+    /* Border dengan warna yang sama dengan teks */
+    box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.4);
+    /* Menambahkan bayangan */
+    z-index: 100;
+}
+
+.tombol_informasi a {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.tombol_informasi i {
+    color: #ffffff;
+    margin-bottom: 3px;
+    text-decoration: none;
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.site_footer {
+    background-color: #083e6b;
+    padding: 5px 20px;
+    color: #fff;
+    text-align: center;
+    bottom: 0px;
+    left: 0;
+    right: 0;
+    position: fixed;
+    /* Footer tetap di bawah */
+}
+
+.footer_bottom {
+    padding-top: 0px;
+}
+
+.footer_bottom p {
+    margin: 0;
+    font-size: 10px;
+    color: #ccc;
+}
+
+.list-info {
+    margin-top: 0px;
+    padding: 5px 10px 100px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.list-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+}
+
+.list-item i {
+    margin-right: 10px;
+    color: #0056b3;
+}
+
+.isi_kontainer {
+    width: 99%;
+    margin: auto;
+}
+
+h2 {
+    color: #000000;
+    text-align: left;
+    margin-bottom: 5px;
+    font-family: 'Poppins_bold', sans-serif;
+}
+
+h3 {
+    color: #000000;
+    text-align: left;
+    margin-bottom: 10px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-decoration: none;
+}
+
+li {
+    color: #000000;
+    text-align: left;
+    margin-bottom: 2px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-decoration: none;
+}
+
+ol {
+    margin-left: 2px;
+}
+
+.isi_data {
+    font-family: 'Poppins_semi_bold', sans-serif;
+}
+
+.whatsapp-float,
+.instagram-float,
+.youtube-float,
+.facebook-float {
+    position: fixed;
+    width: 40px;
+    /* perbesar sedikit agar ada ruang */
+    height: 40px;
+    color: #ffffff;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 15px;
+    z-index: 100;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    background-color: #ffffff;
+    /* opsional, kalau mau ada warna latar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* agar icon pas di tengah */
+}
+
+.whatsapp-float img,
+.instagram-float img,
+.youtube-float img,
+.facebook-float img {
+    width: 28px;
+    /* lebih kecil dari container */
+    height: 28px;
+}
+
+.whatsapp-float {
+    bottom: 40px;
+    right: 5px;
+}
+
+.instagram-float {
+    bottom: 75px;
+    right: 5px;
+}
+
+.youtube-float {
+    bottom: 110px;
+    right: 5px;
+}
+
+.facebook-float {
+    bottom: 145px;
+    right: 5px;
+    z-index: 101;
+}
+
+.whatsapp-float img, .instagram-float img, .youtube-float img, .facebook-float img {
+    width: 30px;
+    /* Ukuran ikon */
+    height: 30px;
+    border-radius: 50px;
+}
+
+.sosmed {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.sosmed img {
+    margin: 0 5px;
+    height: 40px;
+    /* Ukuran ikon media sosial */
+    width: auto;
+}
+
+/* Gaya untuk konten */
+.content {
+    margin: 20px auto;
+    max-width: 800px;
+    /* Lebar maksimum konten */
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Menyembunyikan footer pada tampilan cetak */
+@media print {
+    .site_footer {
+        display: none;
+    }
+}
+
+.pilihan_informasi_populer_kontainer {
+    position: fixed;
+    /* Menggunakan position bukan display */
+    bottom: 25px;
+    left: 50%;
+    /* Agar kontainer berada di tengah secara horizontal */
+    transform: translateX(-50%);
+    /* Menyeimbangkan posisi horizontal */
+    width: 100%;
+    /* Atur lebar kontainer */
+    max-width: 600px;
+    /* Atur lebar maksimum jika diinginkan */
+    padding: 10px;
+    /* Tambahkan padding jika diperlukan */
+    box-sizing: border-box;
+    /* Agar padding tidak mempengaruhi lebar total */
+}
+
+.pilihan_informasi_populer {
+    display: grid;
+    margin-bottom: auto;
+    margin-top: auto;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    /* Atur kolom untuk grid */
+    gap: 4px;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    grid-auto-flow: column;
+    /* Mengubah alur grid ke arah kolom */
+    width: 100%;
+    /* Mengatur lebar grid agar mengisi kontainer */
+}
+
+.pilihan_informasi_populer a {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.pilihan_informasi_populer li {
+    height: 30px;
+}
+
+.link_brosur {
+    position: fixed;
+    /* Menggunakan position bukan display */
+    bottom: 70px;
+    left: 100%;
+    /* Agar kontainer berada di kanan secara horizontal */
+    transform: translateX(-50%);
+    /* Menyeimbangkan posisi horizontal */
+    width: 100%;
+    /* Atur lebar kontainer */
+    max-width: 600px;
+    /* Atur lebar maksimum jika diinginkan */
+    padding: 2px;
+    /* Tambahkan padding jika diperlukan */
+    box-sizing: border-box;
+    /* Agar padding tidak mempengaruhi lebar total */
+}
+
+.pilihan_link_brosur {
+    display: grid;
+    margin-bottom: auto;
+    margin-top: auto;
+    grid-template-columns: repeat(auto-fill, minmax(63px, 1fr));
+    /* Atur kolom untuk grid */
+    gap: 2px;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    grid-auto-flow: column;
+    /* Mengubah alur grid ke arah kolom */
+    width: 100%;
+    /* Mengatur lebar grid agar mengisi kontainer */
+    z-index: 1000;
+}
+
+.link_group {
+    position: fixed;
+    /* Menggunakan position bukan display */
+    bottom: 37px;
+    left: 100%;
+    /* Agar kontainer berada di kanan secara horizontal */
+    transform: translateX(-50%);
+    /* Menyeimbangkan posisi horizontal */
+    width: 100%;
+    /* Atur lebar kontainer */
+    max-width: 600px;
+    /* Atur lebar maksimum jika diinginkan */
+    padding: 2px;
+    /* Tambahkan padding jika diperlukan */
+    box-sizing: border-box;
+    /* Agar padding tidak mempengaruhi lebar total */
+}
+
+.pilihan_link_group {
+    display: grid;
+    margin-bottom: auto;
+    margin-top: auto;
+    grid-template-columns: repeat(auto-fill, minmax(63px, 1fr));
+    /* Atur kolom untuk grid */
+    gap: 2px;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    grid-auto-flow: column;
+    /* Mengubah alur grid ke arah kolom */
+    width: 100%;
+    /* Mengatur lebar grid agar mengisi kontainer */
+}
+
+.link_pendaftaran_santri_madrasah {
+    position: fixed;
+    /* Menggunakan position bukan display */
+    bottom: 72px;
+    left: 50%;
+    /* Agar kontainer berada di kanan secara horizontal */
+    transform: translateX(-50%);
+    /* Menyeimbangkan posisi horizontal */
+    width: 100%;
+    /* Atur lebar kontainer */
+    max-width: 600px;
+    /* Atur lebar maksimum jika diinginkan */
+    padding: 10px;
+    /* Tambahkan padding jika diperlukan */
+    box-sizing: border-box;
+    /* Agar padding tidak mempengaruhi lebar total */
+}
+
+.pilihan_link_pendaftaran_santri_madrasah {
+    display: grid;
+    margin-bottom: auto;
+    margin-top: auto;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    /* Atur kolom untuk grid */
+    gap: 4px;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    grid-auto-flow: column;
+    /* Mengubah alur grid ke arah kolom */
+    width: 100%;
+    /* Mengatur lebar grid agar mengisi kontainer */
+}
+
+.link_pendaftaran_santri_mahad_aly {
+    position: fixed;
+    /* Menggunakan position bukan display */
+    bottom: 105px;
+    left: 50%;
+    /* Agar kontainer berada di kanan secara horizontal */
+    transform: translateX(-50%);
+    /* Menyeimbangkan posisi horizontal */
+    width: 100%;
+    /* Atur lebar kontainer */
+    max-width: 600px;
+    /* Atur lebar maksimum jika diinginkan */
+    padding: 10px;
+    /* Tambahkan padding jika diperlukan */
+    box-sizing: border-box;
+    /* Agar padding tidak mempengaruhi lebar total */
+}
+
+.pilihan_link_pendaftaran_santri_mahad_aly {
+    display: grid;
+    margin-bottom: auto;
+    margin-top: auto;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    /* Atur kolom untuk grid */
+    gap: 4px;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    grid-auto-flow: column;
+    /* Mengubah alur grid ke arah kolom */
+    width: 100%;
+    /* Mengatur lebar grid agar mengisi kontainer */
+}
+
+.pendaftaran {
+    padding: 5px;
+    border-radius: 5px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-align: center;
+    width: 200%;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    text-decoration: none;
+    margin: 0 0 5px;
+    gap: 5px;
+}
+
+.pendaftaran_mahad_aly {
+    padding: 5px;
+    border-radius: 5px;
+    font-family: 'Poppins_semi_bold', sans-serif;
+    text-align: center;
+    width: 200%;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    text-decoration: none;
+    margin: 0 0 5px;
+    gap: 10px;
+}
+
+.footer_nav {
+    padding-top: 100px;
+}
+
+.tombol_informasi a:focus {
+    outline: 2px solid #0056b3;
+    /* Contoh gaya fokus */
+}
+
+.tombol_informasi_aktif i {
+    color: #083e6b;
+}
+
+.tombol_informasi_aktif span {
+    color: #083e6b;
+}
+
+.button-video {
+    display: inline-block;
+    background-color: #083e6b;
+    color: #ffffff;
+    padding: 10px 20px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.button-video:hover {
+    background-color: #0056b3;
+}
+
+/* Gaya untuk tablet */
+@media (min-width: 600px) {
+}
+
+/* Gaya untuk desktop */
+@media (min-width: 1024px) {
+}
+
+/*style mahad*/
+.style_mahad_hidden_form {
+    display: none !important;
+}

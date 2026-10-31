@@ -3,5 +3,4 @@ node_modules/
 *.log
 # Local copies contain user uploads and personal documents.
 storage/
-assets/legacy-public/
 public/storage-cache/

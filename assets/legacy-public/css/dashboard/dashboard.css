@@ -1,0 +1,94 @@
+.fixed-photo {
+    width: 100px;
+    height: 133px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    /* sama dengan Tailwind `rounded` */
+}
+
+.fixed-photo.zoomed {
+    transform: scale(3.5);
+    z-index: 50;
+    position: relative;
+    cursor: zoom-out;
+}
+
+@layer components {
+    .merah svg {
+        fill: #a30202;
+        /* Warna merah */
+        border-radius: 30px;
+        /* Bulat sempurna */
+        width: 32px;
+        /* Lebar ikon */
+        height: 32px;
+        /* Tinggi ikon */
+        display: inline-block;
+    }
+}
+
+#progres-bar-upload.progres-bar-upload {
+    width: 200px;
+    height: 30px;
+    display: none;
+    background: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+.progres-bar-upload .progres-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #85c1e9 50%, #3498db 100%);
+    background-size: 200% 100%;
+    animation: fill 3s ease-in-out infinite alternate,
+    move-bg 1.5s linear infinite;
+}
+
+/* Animasi isi penuh bolak-balik */
+@keyframes fill {
+    from {
+        width: 0%;
+    }
+    to {
+        width: 97%;
+    }
+}
+
+/* Animasi background tetap bergerak */
+@keyframes move-bg {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+#progres-bar-upload.non {
+    width: 200px;
+    height: 30px;
+    display: block;
+    background: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+.non .progres-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #85c1e9 50%, #3498db 100%);
+    background-size: 200% 100%;
+    animation: fill 3s ease-in-out infinite alternate,
+    move-bg 1.5s linear infinite;
+}

@@ -1,14 +1,13 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { setting } from './config.js';
 
-let settings;
+// Optional integration for deployments sharing a database with Laravel.
+// Node reads permissions directly and does not require PHP or a cache service.
 export async function permissionCacheSettings() {
- // Read Laravel's effective configuration, including config:cache and custom prefixes.
- settings ||= promisify(execFile)('php',['-r',`require 'vendor/autoload.php'; $app=require 'bootstrap/app.php'; $app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); $store=config('permission.cache.store'); $store=$store==='default'?config('cache.default'):$store; echo json_encode(['driver'=>config('cache.stores.'.$store.'.driver'),'table'=>config('cache.stores.'.$store.'.table'),'key'=>config('cache.prefix').config('permission.cache.key')]);`],{cwd:new URL('../../',import.meta.url),timeout:15000}).then(({stdout})=>JSON.parse(stdout));
- return settings;
+ return { driver: setting('PERMISSION_CACHE_TABLE') ? 'database' : 'none', table: setting('PERMISSION_CACHE_TABLE'), key: setting('PERMISSION_CACHE_KEY') };
 }
 export async function invalidatePermissionCache(c) {
  const config = await permissionCacheSettings();
- if (config.driver !== 'database' || !/^[a-zA-Z0-9_]+$/.test(config.table || '')) throw new Error('Permission cache requires the shared Laravel database store.');
- await c.execute(`DELETE FROM \`${config.table}\` WHERE \`key\`=?`,[config.key]);
+ if (config.driver === 'none') return;
+ if (!/^[a-zA-Z0-9_]+$/.test(config.table) || !config.key) throw new Error('Set PERMISSION_CACHE_TABLE and PERMISSION_CACHE_KEY for the shared cache.');
+ await c.execute(`DELETE FROM \`${config.table}\` WHERE \`key\`=?`, [config.key]);
 }

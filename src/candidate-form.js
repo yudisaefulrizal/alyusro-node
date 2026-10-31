@@ -9,7 +9,7 @@ export async function candidateFormHtml(row, root = studentRoot) {
  const pkbm = ['Madrasah', "Darul 'Ilmi"].includes(row.jenjang);
  const title = row.jenjang === 'Madrasah' ? 'PENERIMAAN PESERTA DIDIK BARU (PPDB) PAKET B' : row.jenjang === "Darul 'Ilmi" ? 'PENERIMAAN PESERTA DIDIK BARU (PPDB) PAKET C' : row.jenjang === "Ma'had 'Aly" ? 'PENERIMAAN MAHASANTRI BARU (PMB)' : 'PENERIMAAN SANTRI BARU (PSB)';
  const institution = pkbm ? 'PKBM AL YUSRO' : 'MAHAD TAHFIZH AL YUSRO';
- const logo = await readFile(new URL(pkbm ? '../../public/pkbm/pkbm.jpg' : '../../public/pkbm/mahad.png', import.meta.url));
+ const logo = await readFile(new URL(pkbm ? '../assets/legacy-public/pkbm/pkbm.jpg' : '../assets/legacy-public/pkbm/mahad.png', import.meta.url));
  let photo = '';
  const stored = await studentFile(row.foto, root);
  if (stored) try { photo = 'data:image/jpeg;base64,' + (await sharp(await readFile(stored.file), { limitInputPixels: 16000000 }).rotate().resize(240, 315, { fit: 'cover' }).jpeg().toBuffer()).toString('base64'); } catch { /* Unreadable photos leave the printed photo box empty. */ }

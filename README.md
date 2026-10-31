@@ -1,4 +1,55 @@
-# Alyusro Node
+# Alyusro Node — deployment mandiri
+
+Aplikasi berjalan dengan Node.js 22+ dan MySQL, tanpa PHP atau folder proyek Laravel. Konfigurasi dibaca dari `.env` di root repo; environment proses lebih diutamakan. `ENV_FILE` dapat menunjuk file konfigurasi lain secara eksplisit. Upload publik default berada di `storage/app/public`; ubah `PUBLIC_STORAGE_PATH` bila memakai disk lain.
+
+## Instalasi server dan PM2
+
+```bash
+git clone https://github.com/yudisaefulrizal/alyusro-node.git
+cd alyusro-node
+cp .env.example .env
+# Isi database, domain HTTPS, SMTP, dan konfigurasi lain di .env.
+npm ci --omit=dev
+mkdir -p storage/app/public storage/uploads
+```
+
+Buat database MySQL terlebih dahulu. Untuk melanjutkan website lama, impor backup database secara privat dan salin isi disk publik lama ke `storage/app/public/` dengan struktur path yang sama. Salin upload Node lama ke `storage/uploads/` bila ada. Data pengguna, isi konten, email, dan dokumen tidak disertakan dalam Git. Untuk instalasi kosong gunakan `npm run db:setup`; perintah ini menolak database yang sudah memiliki tabel. Skema kosong belum berisi konten website, akun admin, dan konfigurasi hak akses; impor data yang diperlukan dari backup sebelum digunakan operasional.
+
+```bash
+# Untuk database hasil impor: siapkan tabel pendukung jika belum ada.
+npm run auth:setup
+# Tinjau sebelum menjalankan: menambah tabel attempt dan memperlebar jawaban CBT.
+npm run cbt:setup
+
+npm install -g pm2
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup
+# Jalankan perintah sudo yang ditampilkan pm2 startup.
+
+curl -I http://127.0.0.1:8075/
+pm2 logs alyusro-node --lines 50
+```
+
+Arahkan reverse proxy HTTPS ke `http://127.0.0.1:8075`. Tidak ada tahap build. Chrome diperlukan untuk fitur PDF; atur `PDF_CHROME_PATH` sesuai binary server. Gunakan satu instance PM2 karena sebagian state pembatasan/tautan sementara masih berada di memori.
+
+CSS, JS, font, ikon, logo, struktur, brosur, dan template cetak dibundel di `assets/legacy-public/`. File upload tetap berada di storage yang tidak masuk Git. Pada migrasi, salin file upload dari server lama secara privat; jangan menyalinnya ke direktori aset publik Git.
+
+Jika tetap berbagi database dengan Laravel, atur `PERMISSION_CACHE_TABLE` dan `PERMISSION_CACHE_KEY` sesuai konfigurasi cache efektif Laravel agar perubahan role/permission menghapus cache bersama. Pada deployment mandiri kedua nilai tersebut boleh kosong; Node membaca hak akses langsung dari database.
+
+Update berikutnya:
+
+```bash
+git pull --ff-only origin main
+npm ci --omit=dev
+pm2 restart ecosystem.config.cjs --update-env
+pm2 save
+```
+
+## Catatan migrasi terdahulu
+
+Bagian di bawah adalah riwayat implementasi. Rujukan path induk `.env`, storage Laravel, dan ketergantungan PHP sudah digantikan oleh konfigurasi mandiri di atas.
+
 
 Daftar kerja dashboard: [Checklist migrasi dashboard Node.js](../docs/checklist-migrasi-nodejs.md).
 

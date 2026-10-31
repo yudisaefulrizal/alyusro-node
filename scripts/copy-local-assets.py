@@ -4,9 +4,12 @@ from pathlib import Path
 import hashlib
 import json
 import shutil
+import argparse
 
 project = Path(__file__).resolve().parents[1]
-laravel = project.parent
+parser = argparse.ArgumentParser(description='Import assets/uploads from an explicitly selected Laravel backup.')
+parser.add_argument('source', type=Path, help='Laravel root or extracted backup')
+laravel = parser.parse_args().source.resolve()
 
 def digest(path):
     h = hashlib.sha256()
@@ -51,7 +54,7 @@ summary = {}
 manifest = {}
 for key, source, target, asset_only, overwrite in [
     ('builtin', laravel / 'public', project / 'assets' / 'legacy-public', True, True),
-    ('uploads', laravel / 'storage/app/public', project / 'storage/uploads', False, True),
+    ('uploads', laravel / 'storage/app/public', project / 'storage/app/public', False, True),
     ('private', laravel / 'storage/app/private', project / 'storage/private', False, True),
     ('cached_public', project / 'public/storage-cache', project / 'storage/uploads', False, False),
 ]:

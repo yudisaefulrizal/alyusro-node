@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Prototipe lokal website Ma'had Tahfizh Al Yusro",
+  "description": "Website dan dashboard Ma\u2019had Tahfizh Al Yusro",
   "engines": {
     "node": ">=22"
   },
@@ -13,7 +13,8 @@
     "test": "node --test",
     "auth:setup": "node scripts/setup-auth.js",
     "auth:prune": "node scripts/prune-auth.js",
-    "cbt:setup": "node scripts/setup-cbt.js"
+    "cbt:setup": "node scripts/setup-cbt.js",
+    "db:setup": "node scripts/setup-db.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -1,0 +1,1 @@
+window.dataLayer=window.dataLayer||[],window.dataLayer.push({"gtm.start":new Date().getTime(),event:"gtm.js"}),document.addEventListener("DOMContentLoaded",function(){let t=document.getElementById("style_mahad_logout_link"),e=document.getElementById("logout-form");t&&e&&t.addEventListener("click",function(t){t.preventDefault(),e.submit()})});

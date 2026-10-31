@@ -5,7 +5,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 const run = promisify(execFile);
 import { query,pool } from '../src/db.js';
-const root=resolve(fileURLToPath(new URL('../storage/uploads/',import.meta.url)));
+import { publicStorageRoot } from '../src/config.js';
+const root=resolve(fileURLToPath(publicStorageRoot));
 let saved=0,existing=0,failed=0;
 try {
  const paths=new Set(['og/og_360p.webp','og/og.webp']);

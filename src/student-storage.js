@@ -1,10 +1,11 @@
+import { publicStorageRoot } from './config.js';
 import { realpath, stat } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 
-export const studentRoot = new URL('../../storage/app/public/', import.meta.url);
+export const studentRoot = publicStorageRoot;
 export const legacyStudentRoot = new URL('../storage/uploads/', import.meta.url);
 
-// New files share Laravel's public disk. Existing Node uploads remain readable.
+// Standalone public disk; old Node uploads remain readable.
 // Every candidate path must stay inside one of the explicitly configured roots.
 export async function studentFile(path, root = studentRoot, extensions = ['.jpg','.jpeg','.png','.webp']) {
  if (typeof path !== 'string' || !path || path.includes('\0')) return null;

@@ -67,7 +67,7 @@ export const server = http.createServer(async (req, res) => {
           if (file && file.type.startsWith('image/')) return send(200, file.type, file.content);
         }
       }
-      const root = new URL(shared[1] === 'storage' ? '../storage/uploads/' : shared[1] === 'pages' ? '../public/pages/' : '../assets/legacy-public/' + shared[1] + '/', import.meta.url);
+      const root = shared[1] === 'storage' ? contentRoot : new URL(shared[1] === 'pages' ? '../public/pages/' : '../assets/legacy-public/' + shared[1] + '/', import.meta.url);
       try {
         const rootPath = await realpath(root);
         const file = await realpath(resolve(rootPath, decodeURIComponent(shared[2])));

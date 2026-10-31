@@ -14,10 +14,10 @@ export function studentCardIdentity(row) {
  return {template,number:number || '',female,male,level,latin:names[level]?.[0] || row.jenjang,arabic:names[level]?.[1] || row.jenjang};
 }
 export async function studentCardHtml(row,root=studentRoot) {
- const details=studentCardIdentity(row),background=await readFile(new URL('../../public/template/'+details.template,import.meta.url)),metadata=await sharp(background).metadata();
- const width=metadata.width,height=metadata.height,font=await readFile(new URL('../../public/fonts/Simplified Arabic Bold.ttf',import.meta.url));
+ const details=studentCardIdentity(row),background=await readFile(new URL('../assets/legacy-public/template/'+details.template,import.meta.url)),metadata=await sharp(background).metadata();
+ const width=metadata.width,height=metadata.height,font=await readFile(new URL('../assets/legacy-public/fonts/Simplified Arabic Bold.ttf',import.meta.url));
  const stored=await studentFile(row.foto,root);
- const photo=await sharp(stored?await readFile(stored.file):await readFile(new URL('../../public/template/foto-default.jpg',import.meta.url)),{limitInputPixels:16000000}).rotate().resize(500,650,{fit:'cover'}).jpeg().toBuffer();
+ const photo=await sharp(stored?await readFile(stored.file):await readFile(new URL('../assets/legacy-public/template/foto-default.jpg',import.meta.url)),{limitInputPixels:16000000}).rotate().resize(500,650,{fit:'cover'}).jpeg().toBuffer();
  const qr=await QRCode.toDataURL('www.mahadalyusro.sch.id/santri/'+details.number,{errorCorrectionLevel:'H',margin:2,width:512});
  const label=(text,x,y,arabic=false)=>`<div class="text" style="right:${100-x/10}%;top:${y/10}%;${arabic?'direction:rtl;':''}">${esc(text || '')}</div>`;
  const positions=[345,458,567,671,757],values=[row.nama_arab,row.nama,details.number,details.arabic,details.latin],labels=[details.male?'اسم الطالب':details.female?'اسم الطالبة':'الاسم',details.level==="ma'had 'aly"?'Nama Mahasantri':'Nama Santri','رقم الطالب','البرنامج','Program'];

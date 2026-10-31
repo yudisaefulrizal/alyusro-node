@@ -1,10 +1,11 @@
+import { publicStorageRoot } from './config.js';
 import { mkdir, realpath, readFile, writeFile, unlink, stat } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import sharp from 'sharp';
 import JSZip from 'jszip';
 
-export const contentRoot = new URL('../../storage/app/public/', import.meta.url);
+export const contentRoot = publicStorageRoot;
 const types = { pdf:'application/pdf', doc:'application/msword', xls:'application/vnd.ms-excel', ppt:'application/vnd.ms-powerpoint', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation', txt:'text/plain', csv:'text/csv', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', zip:'application/zip', rar:'application/x-rar-compressed' };
 export async function saveContentFile(field, data, root = contentRoot) {
  const bytes = data.upload;

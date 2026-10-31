@@ -1,0 +1,28 @@
+.fixed-photo {
+    width: 100px;
+    height: 133px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    /* sama dengan Tailwind `rounded` */
+}
+
+.fixed-photo.zoomed {
+    transform: scale(3.5);
+    z-index: 50;
+    position: relative;
+    cursor: zoom-out;
+}
+
+@layer components {
+    .merah svg {
+        fill: #a30202;
+        /* Warna merah */
+        border-radius: 30px;
+        /* Bulat sempurna */
+        width: 32px;
+        /* Lebar ikon */
+        height: 32px;
+        /* Tinggi ikon */
+        display: inline-block;
+    }
+}

@@ -1,0 +1,460 @@
+@font-face {
+    font-family: 'alyusro';
+    /* Ganti dengan nama font yang Anda inginkan */
+    src: url("/storage/fonts/nasalization-rg.otf") format("opentype");
+    /* Ganti dengan path dan nama file OTF Anda */
+    font-weight: normal;
+    /* Atur berat font */
+    font-style: normal;
+    /* Atur gaya font */
+}
+
+a {
+    color: #ffffff;
+}
+
+.tanggal_sekarang {
+    font-size: 14px;
+    color: #555;
+    margin-right: 20px;
+    white-space: nowrap;
+}
+
+.link_berita_random {
+    flex: 1;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Menghilangkan elemen saat ukuran layar kecil */
+@media (max-width: 768px) {
+    /* Ganti 768px dengan breakpoint yang diinginkan */
+    .link_berita_random {
+        display: none;
+        /* Menghilangkan elemen */
+    }
+}
+
+.nav_link_berita_random {
+    display: flex;
+    gap: 10px;
+}
+
+.selanjutnya,
+.sebelumnya {
+    cursor: pointer;
+    padding: 5px 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+
+/* Menghilangkan elemen saat ukuran layar kecil */
+@media (max-width: 768px) {
+    /* Ganti 768px dengan breakpoint yang diinginkan */
+    .selanjutnya,
+    .sebelumnya {
+        display: none;
+        /* Menghilangkan elemen */
+    }
+}
+
+.selanjutnya:hover,
+.sebelumnya:hover {
+    background-color: #ccc;
+}
+
+.berita_acak {
+    text-align: right;
+    font-size: 24px;
+    /* Ganti 24px dengan ukuran yang Anda inginkan */
+    text-transform: uppercase;
+}
+
+/* Menghilangkan elemen saat ukuran layar kecil */
+@media (max-width: 768px) {
+    /* Ganti 768px dengan breakpoint yang diinginkan */
+    .berita_acak {
+        display: none;
+        /* Menghilangkan elemen */
+    }
+}
+
+.kontainer_grid_daftar_artikel {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+}
+
+.kontainer_kategori {
+    background-color: #083e6b;
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+    /* Centers the container horizontally */
+    margin-right: auto;
+    /* Centers the container horizontally */
+    margin-top: 10px;
+    margin-bottom: 10px;
+    max-width: 830px;
+    /* Maximum width */
+}
+
+.kategori {
+    padding: 5px 10px;
+    /* background-color: #868282; */
+    color: #ffffff;
+    border-radius: 5px;
+}
+
+.daftar_grid_artikel {
+    display: flex;
+    gap: 10px;
+}
+
+.kolom_kiri {
+    position: relative;
+}
+
+.kontainer_gambar_kecil {
+    align-items: center;
+    width: 400px;
+    height: 400px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    /* border: 2px solid rgba(0, 0, 0, 0.1); */
+    padding: 5px;
+}
+
+.kontainer_gambar_besar {
+    align-items: center;
+    width: 400px;
+    height: 400px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    /* border: 2px solid rgba(0, 0, 0, 0.1); */
+    padding: 5px;
+    color: #ffffff;
+}
+
+.gambar_kecil {
+    position: relative;
+    /* Memungkinkan posisi absolut untuk img */
+    width: 195px;
+    /* Lebar kontainer */
+    height: 195px;
+    /* Tinggi kontainer */
+    overflow: hidden;
+    /* Menghapus gambar yang melampaui batas */
+    margin: auto;
+}
+
+.gambar_kecil img {
+    position: absolute;
+    /* Memposisikan gambar secara absolut di dalam kontainer */
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    /* Lebar gambar 100% */
+    height: auto;
+    /* Tinggi otomatis agar tetap proporsional */
+    transform: translate(-50%, -50%);
+    /* Pusatkan gambar */
+    min-width: 100%;
+    /* Pastikan gambar memenuhi lebar kontainer */
+    min-height: 100%;
+    /* Pastikan gambar memenuhi tinggi kontainer */
+    object-fit: cover;
+    /* Crop gambar untuk memenuhi kontainer */
+}
+
+.gambar_kecil .judul {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(2, 2, 2, 0));
+    color: white;
+    text-align: left;
+    padding: 5px;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+}
+
+.kolom_kanan {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    overflow: hidden;
+}
+
+.kolom_kanan img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.kolom_kanan .body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(2, 2, 2, 0));
+    color: rgb(255, 255, 255);
+    text-align: center;
+    padding: 10px;
+    font-size: 18px;
+    font-family: Arial, sans-serif;
+}
+
+.judul a {
+    color: rgb(255, 255, 255);
+}
+
+/* Media query untuk layar kecil */
+@media (max-width: 768px) {
+    .kontainer_grid_daftar_artikel {
+        display: none;
+    }
+}
+
+/* kontainer list artikel */
+.kontainer_list_artikel {
+    display: flex;
+    background-color: #fff;
+    border-radius: 0px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+    max-width: 830px;
+    /* Maximum width */
+    margin-left: auto;
+    /* Centers the container horizontally */
+    margin-right: auto;
+    /* Centers the container horizontally */
+    margin-top: 20px;
+}
+
+.thumbnail_list_artikel {
+    width: 250px;
+    height: 250px;
+    /* Static portrait ratio (3:4) */
+    overflow: hidden;
+    /* Ensure the image crops if it doesn't fit */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    padding: 15px;
+}
+
+.thumbnail_list_artikel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Crops image to fill the container while keeping aspect ratio */
+}
+
+.isi_list_artikel {
+    padding: 15px;
+    flex: 1;
+}
+
+.judul_list_artikel {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.info_list_artikel {
+    display: flex;
+    gap: 15px;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.info_list_artikel div {
+    display: inline-block;
+}
+
+.cuplikasi_isi_konten {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.baca_penuh {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #083e6b;
+    color: white;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .thumbnail_list_artikel {
+        width: 300px;
+        height: 160px;
+        align-content: center;
+        margin: auto;
+        /* display: none; Hide thumbnail on small screens */
+    }
+    .kontainer_list_artikel {
+        flex-direction: column;
+        /* Stack the content vertically */
+        max-width: 100%;
+        /* Full width on small screens */
+    }
+    .isi_list_artikel {
+        padding: 10px;
+    }
+}
+
+.baca_penuh:hover {
+    background-color: #0056b3;
+}
+
+/* paginasi */
+.paginasi_kontainer {
+    display: flex;
+    /* Menggunakan flexbox untuk tata letak */
+    justify-content: center;
+    /* Memusatkan isi dalam kontainer */
+    align-items: center;
+    /* Mengatur item agar vertikal sejajar */
+    max-width: 800px;
+    /* Mengatur lebar maksimum kontainer */
+    margin: 0 auto;
+    /* Memusatkan kontainer di tengah halaman */
+    padding: 10px;
+    /* Menambahkan padding di dalam kontainer */
+    color: #ffffff;
+}
+
+.selanjutnya,
+.sebelumnya {
+    cursor: pointer;
+    /* Menunjukkan kursor pointer saat hover */
+    padding: 0 15px;
+    /* Menambahkan padding horizontal */
+    font-weight: bold;
+    color: #ffffff;
+    /* Mengatur font menjadi tebal */
+    background-color: #083e6b;
+    padding: 10px 10px
+}
+
+.list_paginasi {
+    display: flex;
+    /* Menggunakan flexbox untuk tata letak horizontal */
+    align-items: center;
+    /* Mengatur item agar vertikal sejajar */
+}
+
+.list_paginasi div {
+    margin: 0 5px;
+    /* Menambahkan margin antar item */
+    cursor: pointer;
+    /* Menunjukkan kursor pointer saat hover */
+    padding: 10px 10px;
+    /* Menambahkan padding di sekitar teks */
+    transition: background-color 0.3s;
+    /* Animasi transisi warna latar belakang */
+    background-color: #083e6b;
+    border-radius: 4px;
+}
+
+.list_paginasi div:hover {
+    background-color: #083e6b;
+    /* Mengubah warna latar belakang saat hover */
+}
+
+/* footer */
+.selanjutnya {
+    color: #ffffff;
+}
+
+.kategori {
+    color: rgb(255, 255, 255);
+    /* Warna default */
+    text-decoration: none;
+    background-color: #083e6b;
+    margin: 2px;
+    width: 60px;
+    /* Atur lebar yang sama */
+    text-align: center;
+    /* Agar teks berada di tengah */
+    padding: 5px 10px;
+    /* Tambahkan padding untuk jarak dalam */
+    display: inline-block;
+    /* Agar kotak bisa berada dalam satu baris dengan elemen lainnya */
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.kategori.active {
+    color: #c5aa32;
+    /* Warna untuk tautan yang aktif */
+    font-weight: bold;
+    /* Misalnya, jika Anda ingin menebalkan teks */
+}
+
+.judul_list_artikel a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.footer_nav {
+    padding-top: 100px;
+}
+
+.kontainer_gambar_kecil h4 a {
+    text-decoration: none;
+    color: #ffffff;
+    /* atau warna lain sesuai desain Anda */
+}
+
+h2 a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.judul a {
+    text-decoration: none;
+    color: inherit;
+    /* atau color: #fff jika background gelap */
+}
+
+a,
+a: visited,
+a: hover,
+a: active,
+a: focus {
+    text-decoration: none;
+}
+
+body a,
+div a,
+h1 a,
+h2 a,
+h3 a,
+h4 a,
+h5 a,
+h6 a,
+p a,
+span a {
+    text-decoration: none;
+}
